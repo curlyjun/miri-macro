@@ -19,5 +19,7 @@ jobs:
         env:
           MODE: auto_book
           BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
+          MIRI_MEMBER_UID: ${{ secrets.MIRI_MEMBER_UID }}
+          MIRI_REFRESH_TOKEN: ${{ secrets.MIRI_REFRESH_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}

@@ -5,8 +5,9 @@ require('dotenv').config();
 const config = require('./config.json');
 const MODE = process.env.MODE || 'monitor';
 
-const BASE_URL =
-  'https://commute-miri-api.e-bus.co.kr/aibos/client/api/v1/service/MIRI00000000000000000000000SVC';
+const API_ROOT = 'https://commute-miri-api.e-bus.co.kr/aibos/client/api';
+const BASE_URL = `${API_ROOT}/v1/service/MIRI00000000000000000000000SVC`;
+const REFRESH_URL = `${API_ROOT}/v1/public/service/MIRI00000000000000000000000SVC/member/refresh-token`;
 
 const WEEKDAY_MAP = {
   0: 'SUN', 1: 'MON', 2: 'TUE', 3: 'WED', 4: 'THU', 5: 'FRI', 6: 'SAT',
@@ -46,6 +47,39 @@ function nowKST() {
   return new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' });
 }
 
+// ──────────────── 토큰 자동 갱신 ────────────────
+
+async function refreshAccessToken() {
+  const refreshToken = process.env.MIRI_REFRESH_TOKEN;
+  const memberUid = process.env.MIRI_MEMBER_UID;
+  if (!refreshToken || !memberUid) return null;
+
+  try {
+    console.log('[토큰] refresh 시도...');
+    const res = await fetch(REFRESH_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.BEARER_TOKEN || ''}`,
+        Accept: 'application/json, text/plain, */*',
+        Origin: 'https://commute.e-bus.co.kr',
+        Referer: 'https://commute.e-bus.co.kr/',
+        'User-Agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148/iosapp',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ memberUid, refreshToken }).toString(),
+    });
+    if (!res.ok) { console.warn(`[토큰] refresh 실패: HTTP ${res.status}`); return null; }
+    const json = await res.json();
+    if (json.resultCode !== 0) { console.warn('[토큰] refresh 실패:', json.resultMessage); return null; }
+    console.log('[토큰] refresh 성공');
+    return json.data.accessToken;
+  } catch (err) {
+    console.warn('[토큰] refresh 오류:', err.message);
+    return null;
+  }
+}
+
 // ──────────────── 텔레그램 ────────────────
 
 async function sendTelegram(message) {
@@ -79,9 +113,10 @@ async function getBookableDates(target) {
   const res = await fetch(url, { headers: getHeaders() });
   if (res.status === 401) {
     await sendTelegram(
-      '⚠️ <b>MiRi 토큰 만료</b>\n' +
-        'Proxyman으로 앱을 실행해 새 토큰을 캡처한 뒤\n' +
-        'GitHub Secrets → BEARER_TOKEN을 업데이트해주세요.',
+      '⚠️ <b>MiRi 토큰 만료 (자동 갱신 실패)</b>\n' +
+        'MIRI_REFRESH_TOKEN이 만료되었습니다.\n' +
+        'Stream 앱으로 새 토큰을 캡처한 뒤\n' +
+        'GitHub Secrets → BEARER_TOKEN, MIRI_REFRESH_TOKEN을 업데이트해주세요.',
     );
     process.exit(1);
   }
@@ -345,14 +380,30 @@ async function runAutoBook() {
 
 // ──────────────── 진입점 ────────────────
 
-if (!process.env.BEARER_TOKEN) {
-  console.error('오류: BEARER_TOKEN 환경변수가 설정되지 않았습니다.');
-  console.error('.env.example을 복사해서 .env를 만들고 토큰을 입력해주세요.');
-  process.exit(1);
+async function main() {
+  if (!process.env.BEARER_TOKEN && !process.env.MIRI_REFRESH_TOKEN) {
+    console.error('오류: BEARER_TOKEN 또는 MIRI_REFRESH_TOKEN 환경변수가 필요합니다.');
+    process.exit(1);
+  }
+
+  // 시작 시 토큰 자동 갱신
+  if (process.env.MIRI_REFRESH_TOKEN) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      process.env.BEARER_TOKEN = newToken;
+    } else if (!process.env.BEARER_TOKEN) {
+      console.error('오류: 토큰 갱신 실패. BEARER_TOKEN도 없어 실행 불가.');
+      process.exit(1);
+    } else {
+      console.warn('[토큰] 갱신 실패 - 기존 BEARER_TOKEN으로 계속 시도합니다.');
+    }
+  }
+
+  if (MODE === 'auto_book') {
+    await runAutoBook();
+  } else {
+    await runMonitor();
+  }
 }
 
-if (MODE === 'auto_book') {
-  runAutoBook().catch((err) => { console.error('치명적 오류:', err); process.exit(1); });
-} else {
-  runMonitor().catch((err) => { console.error('치명적 오류:', err); process.exit(1); });
-}
+main().catch((err) => { console.error('치명적 오류:', err); process.exit(1); });
