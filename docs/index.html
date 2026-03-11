@@ -171,7 +171,8 @@
       if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
       const data = await res.json();
       fileSha = data.sha;
-      configData = JSON.parse(atob(data.content.replace(/\n/g, '')));
+      const bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), c => c.charCodeAt(0));
+      configData = JSON.parse(new TextDecoder().decode(bytes));
       renderConfig();
       document.getElementById('config-section').style.display = 'block';
       setStatus('설정을 불러왔습니다.', 'ok');
