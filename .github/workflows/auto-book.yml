@@ -1,0 +1,23 @@
+name: MiRi 자동 예약 (매일 10:00 KST)
+
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 01:00 UTC = 10:00 KST
+  workflow_dispatch:       # 수동 실행 버튼
+
+jobs:
+  auto-book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: 자동 예약 실행
+        run: node index.js
+        env:
+          MODE: auto_book
+          BEARER_TOKEN: ${{ secrets.BEARER_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
