@@ -115,7 +115,7 @@ async function getBookableDates(target) {
     await sendTelegram(
       '⚠️ <b>MiRi 토큰 만료 (자동 갱신 실패)</b>\n' +
         'MIRI_REFRESH_TOKEN이 만료되었습니다.\n' +
-        'Stream 앱으로 새 토큰을 캡처한 뒤\n' +
+        'Proxyman으로 새 토큰을 캡처한 뒤\n' +
         'GitHub Secrets → BEARER_TOKEN, MIRI_REFRESH_TOKEN을 업데이트해주세요.',
     );
     process.exit(1);
