@@ -309,8 +309,10 @@ async function runAutoBook() {
           dateInfo.myBookRangeCount > 0 ||
           (dateInfo.myBooks && dateInfo.myBooks.length > 0);
         if (alreadyBooked) {
-          console.log(`  ${targetDate} 이미 예약되어 있습니다.`);
           booked = true;
+          const msg = `✅ <b>${targetDate} 이미 예약되어 있습니다.</b>\n🚌 ${target.name}`;
+          console.log(msg.replace(/<[^>]+>/g, ''));
+          await sendTelegram(msg);
           break;
         }
 
