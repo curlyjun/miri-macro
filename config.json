@@ -1,15 +1,24 @@
 {
   "targets": [
     {
-      "name": "M4434 06:35 출근 버스",
+      "name": "M4434 06:35 ì¶ê·¼ ë²ì¤",
       "lineTurnUid": "202306301650551439839494929LNT",
       "onStationUid": "202504010101395271849201998STA",
       "offStationUid": "000MIRI00000000000000000020STA",
-      "weekdays": ["MON", "THU", "FRI"],
+      "weekdays": [
+        "MON",
+        "TUE",
+        "WED",
+        "THU",
+        "FRI"
+      ],
       "dates": [],
       "seatPreference": {
         "fromRow": 3,
-        "preferredColumns": [4, 2]
+        "preferredColumns": [
+          2,
+          4
+        ]
       }
     }
   ]
