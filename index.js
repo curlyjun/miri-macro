@@ -6,8 +6,10 @@ const config = require("./config.json");
 const MODE = process.env.MODE || "monitor";
 
 const API_ROOT = "https://commute-miri-api.e-bus.co.kr/aibos/client/api";
-const BASE_URL = `${API_ROOT}/v1/service/MIRI00000000000000000000000SVC`;
-const REFRESH_URL = `${API_ROOT}/v1/public/service/MIRI00000000000000000000000SVC/member/refresh-token`;
+const SERVICE_INFO_URL = `${API_ROOT}/v1/public/service/MIRI`;
+const FALLBACK_SERVICE_UID = "MIRI00000000000000000000000SVC";
+let BASE_URL = `${API_ROOT}/v1/service/${FALLBACK_SERVICE_UID}`;
+let REFRESH_URL = `${API_ROOT}/v1/public/service/${FALLBACK_SERVICE_UID}/member/refresh-token`;
 
 const WEEKDAY_MAP = {
   0: "SUN",
@@ -56,6 +58,27 @@ function matchesWeekday(weekdayCode, weekdays) {
 
 function nowKST() {
   return new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+}
+
+// ──────────────── 서비스 UID 동적 조회 ────────────────
+
+async function fetchServiceUid() {
+  try {
+    const res = await fetch(SERVICE_INFO_URL, { headers: getHeaders() });
+    if (!res.ok) {
+      console.warn(`[서비스] UID 조회 실패: HTTP ${res.status} - 기존 값 사용`);
+      return null;
+    }
+    const json = await res.json();
+    if (json.resultCode !== 0 || !json.data?.uid) {
+      console.warn(`[서비스] UID 조회 실패: ${json.resultMessage} - 기존 값 사용`);
+      return null;
+    }
+    return json.data.uid;
+  } catch (err) {
+    console.warn(`[서비스] UID 조회 오류: ${err.message} - 기존 값 사용`);
+    return null;
+  }
 }
 
 // ──────────────── 토큰 자동 갱신 ────────────────
@@ -463,6 +486,14 @@ async function main() {
       "오류: BEARER_TOKEN 또는 MIRI_REFRESH_TOKEN 환경변수가 필요합니다.",
     );
     process.exit(1);
+  }
+
+  // 서비스 UID 동적 조회 (실패 시 폴백)
+  const serviceUid = await fetchServiceUid();
+  if (serviceUid && serviceUid !== FALLBACK_SERVICE_UID) {
+    console.log(`[서비스] UID 업데이트: ${serviceUid}`);
+    BASE_URL = `${API_ROOT}/v1/service/${serviceUid}`;
+    REFRESH_URL = `${API_ROOT}/v1/public/service/${serviceUid}/member/refresh-token`;
   }
 
   // 시작 시 토큰 자동 갱신
