@@ -289,7 +289,8 @@
     const { repo, pat } = getGitHub();
     if (!repo || !pat) { setStatus('저장소와 PAT를 입력해주세요.', 'err'); return; }
     collectConfig();
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(configData, null, 2) + '\n')));
+    const jsonStr = JSON.stringify(configData, null, 2) + '\n';
+    const content = btoa(new TextEncoder().encode(jsonStr).reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
     setStatus('저장 중...');
     try {
       const res = await fetch(`https://api.github.com/repos/${repo}/contents/config.json`, {
