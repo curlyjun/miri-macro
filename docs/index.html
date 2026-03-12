@@ -29,9 +29,68 @@
       border-radius: 8px; font-size: 14px; outline: none;
     }
     input:focus { border-color: #0071e3; }
-    .row { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; }
-    .row input { flex: 1; }
-    .target-name { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+
+    /* 카드 헤더 */
+    .card-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px;
+    }
+    .name-input {
+      flex: 1; font-size: 16px; font-weight: 600;
+      border: none !important;
+      border-bottom: 1.5px solid #d2d2d7 !important;
+      border-radius: 0 !important;
+      padding: 4px 0 !important;
+      background: transparent;
+    }
+    .name-input:focus { border-bottom-color: #0071e3 !important; outline: none; }
+    .btn-icon {
+      flex-shrink: 0; width: 28px; height: 28px;
+      border: none; border-radius: 50%;
+      background: #ff3b3015; color: #ff3b30;
+      font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .btn-icon:hover { background: #ff3b3025; }
+
+    /* 버스 정보 표시 */
+    .bus-info {
+      background: #f5f5f7; border-radius: 8px;
+      padding: 10px 12px; margin-bottom: 8px;
+    }
+    .bus-info-item { font-size: 13px; color: #555; line-height: 1.7; }
+    .bus-info-item span { color: #1d1d1f; font-weight: 500; }
+
+    /* 노선 선택 패널 */
+    .bus-selector {
+      border: 1.5px solid #e5e5ea; border-radius: 10px;
+      padding: 14px; margin-top: 10px; background: #fafafa;
+    }
+    .search-input {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid #d2d2d7; border-radius: 8px;
+      font-size: 14px; outline: none;
+    }
+    .search-input:focus { border-color: #0071e3; }
+    .search-results { margin-top: 4px; border-radius: 8px; overflow: hidden; }
+    .search-results:not(:empty) { border: 1px solid #e5e5ea; }
+    .result-item {
+      padding: 9px 12px; font-size: 14px;
+      cursor: pointer; background: #fff;
+      border-bottom: 1px solid #f0f0f5;
+      transition: background .1s;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: #f0f5ff; }
+    .result-empty { padding: 9px 12px; font-size: 13px; color: #999; background: #fff; }
+    .select-input {
+      width: 100%; padding: 9px 12px;
+      border: 1px solid #d2d2d7; border-radius: 8px;
+      font-size: 14px; background: #fff; outline: none;
+    }
+    .select-input:focus { border-color: #0071e3; }
+
+    /* 기존 스타일 */
     .section-label { font-size: 13px; color: #888; margin-bottom: 8px; margin-top: 16px; }
     .weekday-grid { display: flex; gap: 6px; flex-wrap: wrap; }
     .weekday-btn {
@@ -59,15 +118,15 @@
       background: #f5f5f7; border-radius: 8px; padding: 8px 12px; font-size: 14px;
     }
     .date-item button {
-      border: none; background: none; color: #ff3b30; font-size: 16px;
-      cursor: pointer; padding: 0 4px;
+      border: none; background: none; color: #ff3b30;
+      font-size: 16px; cursor: pointer; padding: 0 4px;
     }
     .date-add-row { display: flex; gap: 8px; margin-top: 8px; }
     .date-add-row input[type="date"] {
       flex: 1; padding: 9px 12px; border: 1px solid #d2d2d7;
       border-radius: 8px; font-size: 14px; outline: none;
     }
-    btn, button.btn {
+    .btn, button.btn {
       display: inline-flex; align-items: center; justify-content: center;
       padding: 10px 18px; border: none; border-radius: 8px; font-size: 14px;
       font-weight: 600; cursor: pointer; transition: opacity .15s;
@@ -77,7 +136,7 @@
     .btn-secondary { background: #e8e8ed; color: #1d1d1f; }
     .btn-secondary:hover { opacity: .88; }
     .btn-small { padding: 8px 14px; font-size: 13px; }
-    .btn-danger { background: #ff3b30; color: #fff; }
+    .add-target-bar { text-align: center; margin-bottom: 16px; }
     .save-bar {
       position: sticky; bottom: 16px; background: #fff;
       border-radius: 12px; padding: 14px 20px;
@@ -85,13 +144,9 @@
       display: flex; justify-content: center;
     }
     .save-bar button { width: 100%; padding: 14px; font-size: 16px; }
-    #status {
-      font-size: 13px; text-align: center; margin-top: 12px;
-      min-height: 20px; color: #555;
-    }
+    #status { font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; color: #555; }
     #status.ok { color: #34c759; }
     #status.err { color: #ff3b30; }
-    .hidden { display: none !important; }
     #config-section { display: none; }
   </style>
 </head>
@@ -117,6 +172,9 @@
   <!-- 설정 편집 영역 -->
   <div id="config-section">
     <div id="targets-container"></div>
+    <div class="add-target-bar">
+      <button class="btn btn-secondary" onclick="addTarget()">+ 버스 추가</button>
+    </div>
     <div class="save-bar">
       <button class="btn btn-primary" onclick="saveConfig()">저장 (GitHub에 커밋)</button>
     </div>
@@ -139,6 +197,10 @@
 
   let configData = null;
   let fileSha = '';
+  let lineData = [];
+  const turnMap = {};    // lineTurnUid -> { lineNo, lineName, departureTime, stations, line }
+  const stationMap = {}; // stationUid -> stationName
+  const cardState = {};  // ti -> { lineTurnUid, onStationUid, offStationUid, selectedTurnStations, offCandidates }
 
   function setStatus(msg, type = '') {
     const el = document.getElementById('status');
@@ -154,7 +216,6 @@
     return { repo, pat };
   }
 
-  // 세션에 저장된 값 복원
   window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('repo').value = sessionStorage.getItem('gh_repo') || '';
     document.getElementById('pat').value = sessionStorage.getItem('gh_pat') || '';
@@ -173,6 +234,15 @@
       fileSha = data.sha;
       const bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), c => c.charCodeAt(0));
       configData = JSON.parse(new TextDecoder().decode(bytes));
+
+      setStatus('노선 데이터 로딩 중...');
+      try {
+        const lineRes = await fetch(`https://raw.githubusercontent.com/${repo}/main/line.json`);
+        if (lineRes.ok) buildLineMaps((await lineRes.json()).data || []);
+      } catch (e) {
+        console.warn('line.json 로딩 실패:', e.message);
+      }
+
       renderConfig();
       document.getElementById('config-section').style.display = 'block';
       setStatus('설정을 불러왔습니다.', 'ok');
@@ -181,63 +251,308 @@
     }
   }
 
+  function buildLineMaps(data) {
+    lineData = data;
+    data.forEach(line => {
+      line.turns.forEach(turn => {
+        if (!turn.useYn) return;
+        turnMap[turn.uid] = {
+          lineNo: line.no,
+          lineName: line.name,
+          departureTime: turn.beginStation?.departureTime || '',
+          stations: turn.stations || [],
+          line,
+        };
+        (turn.stations || []).forEach(s => { if (s.uid) stationMap[s.uid] = s.name; });
+      });
+    });
+  }
+
+  function escHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function busInfoHtml(ti) {
+    const s = cardState[ti] || {};
+    const info = turnMap[s.lineTurnUid];
+    const onName = s.onStationUid ? (stationMap[s.onStationUid] || '알 수 없음') : '—';
+    const offName = s.offStationUid ? (stationMap[s.offStationUid] || '알 수 없음') : '—';
+    const busLine = info ? `${info.lineNo}  ${info.departureTime} 출발` : (s.lineTurnUid ? '노선 정보 없음 (line.json 확인)' : '—');
+    return `
+      <div class="bus-info-item">🚌 <span>${escHtml(busLine)}</span></div>
+      <div class="bus-info-item">📍 승차: <span>${escHtml(onName)}</span> → 하차: <span>${escHtml(offName)}</span></div>
+    `;
+  }
+
   function renderConfig() {
     const container = document.getElementById('targets-container');
     container.innerHTML = '';
     configData.targets.forEach((target, ti) => {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="target-name">${target.name}</div>
-
-        <div class="section-label">감시 요일</div>
-        <div class="weekday-grid" id="weekdays-${ti}"></div>
-
-        <div class="section-label">선호 좌석 위치</div>
-        <div class="col-grid" id="cols-${ti}"></div>
-        <div class="from-row-row">
-          <label>시작 줄 이상:</label>
-          <input type="number" id="fromRow-${ti}" min="1" max="20"
-            value="${target.seatPreference?.fromRow ?? 3}" />
-        </div>
-
-        <div class="section-label">특정 날짜 지정 (선택 · 비워두면 요일만 적용)</div>
-        <div class="date-list" id="dates-${ti}"></div>
-        <div class="date-add-row">
-          <input type="date" id="dateInput-${ti}" />
-          <button class="btn btn-secondary btn-small" onclick="addDate(${ti})">+ 추가</button>
-        </div>
-      `;
-      container.appendChild(card);
-
-      // 요일 버튼 렌더
-      const wdGrid = document.getElementById(`weekdays-${ti}`);
-      DAYS.forEach(({ code, label }) => {
-        const btn = document.createElement('button');
-        btn.className = 'weekday-btn' + (target.weekdays?.includes(code) ? ' active' : '');
-        btn.textContent = label;
-        btn.dataset.code = code;
-        btn.onclick = () => {
-          btn.classList.toggle('active');
-        };
-        wdGrid.appendChild(btn);
-      });
-
-      // 열 선호 버튼 렌더
-      const colGrid = document.getElementById(`cols-${ti}`);
-      COLS.forEach(({ no, label }) => {
-        const btn = document.createElement('button');
-        btn.className =
-          'col-btn' + (target.seatPreference?.preferredColumns?.includes(no) ? ' active' : '');
-        btn.textContent = label;
-        btn.dataset.col = no;
-        btn.onclick = () => btn.classList.toggle('active');
-        colGrid.appendChild(btn);
-      });
-
-      // 특정 날짜 렌더
-      renderDates(ti, target.dates || []);
+      cardState[ti] = {
+        lineTurnUid: target.lineTurnUid || '',
+        onStationUid: target.onStationUid || '',
+        offStationUid: target.offStationUid || '',
+      };
+      appendTargetCard(ti, target);
     });
+  }
+
+  function appendTargetCard(ti, target) {
+    const container = document.getElementById('targets-container');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = `target-card-${ti}`;
+    card.innerHTML = `
+      <div class="card-header">
+        <input type="text" class="name-input" id="name-input-${ti}"
+          value="${escHtml(target.name)}" placeholder="버스 이름 입력" />
+        <button class="btn-icon" onclick="removeTarget(${ti})" title="삭제">✕</button>
+      </div>
+
+      <div class="bus-info" id="bus-info-${ti}">${busInfoHtml(ti)}</div>
+      <button class="btn btn-secondary btn-small" onclick="toggleBusSelector(${ti})">노선 변경</button>
+
+      <div class="bus-selector" id="bus-selector-${ti}" style="display:none">
+        <div class="section-label">🔍 노선 검색</div>
+        <input type="text" class="search-input" id="line-search-${ti}"
+          placeholder="노선 번호 또는 이름 (예: M4434, 서울)"
+          oninput="onLineSearch(${ti})" autocomplete="off" />
+        <div class="search-results" id="line-results-${ti}"></div>
+
+        <div id="turn-section-${ti}" style="display:none">
+          <div class="section-label">출발 시간</div>
+          <select class="select-input" id="turn-select-${ti}" onchange="onTurnChange(${ti})">
+            <option value="">출발 시간 선택</option>
+          </select>
+        </div>
+
+        <div id="on-station-section-${ti}" style="display:none">
+          <div class="section-label">🔍 승차 정류장</div>
+          <input type="text" class="search-input" id="on-search-${ti}"
+            placeholder="정류장 이름 검색"
+            oninput="onOnSearch(${ti})" onfocus="onOnSearch(${ti})" autocomplete="off" />
+          <div class="search-results" id="on-results-${ti}"></div>
+        </div>
+
+        <div id="off-station-section-${ti}" style="display:none">
+          <div class="section-label">🔍 하차 정류장</div>
+          <input type="text" class="search-input" id="off-search-${ti}"
+            placeholder="정류장 이름 검색"
+            oninput="onOffSearch(${ti})" onfocus="onOffSearch(${ti})" autocomplete="off" />
+          <div class="search-results" id="off-results-${ti}"></div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:16px">감시 요일</div>
+      <div class="weekday-grid" id="weekdays-${ti}"></div>
+
+      <div class="section-label">선호 좌석 위치</div>
+      <div class="col-grid" id="cols-${ti}"></div>
+      <div class="from-row-row">
+        <label>시작 줄 이상:</label>
+        <input type="number" id="fromRow-${ti}" min="1" max="20"
+          value="${target.seatPreference?.fromRow ?? 3}" />
+      </div>
+
+      <div class="section-label">특정 날짜 지정 (선택 · 비워두면 요일만 적용)</div>
+      <div class="date-list" id="dates-${ti}"></div>
+      <div class="date-add-row">
+        <input type="date" id="dateInput-${ti}" />
+        <button class="btn btn-secondary btn-small" onclick="addDate(${ti})">+ 추가</button>
+      </div>
+    `;
+    container.appendChild(card);
+
+    const wdGrid = document.getElementById(`weekdays-${ti}`);
+    DAYS.forEach(({ code, label }) => {
+      const btn = document.createElement('button');
+      btn.className = 'weekday-btn' + (target.weekdays?.includes(code) ? ' active' : '');
+      btn.textContent = label;
+      btn.dataset.code = code;
+      btn.onclick = () => btn.classList.toggle('active');
+      wdGrid.appendChild(btn);
+    });
+
+    const colGrid = document.getElementById(`cols-${ti}`);
+    COLS.forEach(({ no, label }) => {
+      const btn = document.createElement('button');
+      btn.className = 'col-btn' + (target.seatPreference?.preferredColumns?.includes(no) ? ' active' : '');
+      btn.textContent = label;
+      btn.dataset.col = no;
+      btn.onclick = () => btn.classList.toggle('active');
+      colGrid.appendChild(btn);
+    });
+
+    renderDates(ti, target.dates || []);
+  }
+
+  function toggleBusSelector(ti) {
+    const sel = document.getElementById(`bus-selector-${ti}`);
+    const open = sel.style.display === 'none';
+    sel.style.display = open ? 'block' : 'none';
+    if (open) {
+      document.getElementById(`line-search-${ti}`).value = '';
+      document.getElementById(`line-results-${ti}`).innerHTML = '';
+      document.getElementById(`turn-section-${ti}`).style.display = 'none';
+      document.getElementById(`on-station-section-${ti}`).style.display = 'none';
+      document.getElementById(`off-station-section-${ti}`).style.display = 'none';
+      document.getElementById(`line-search-${ti}`).focus();
+    }
+  }
+
+  function onLineSearch(ti) {
+    const q = document.getElementById(`line-search-${ti}`).value.trim().toLowerCase();
+    const results = document.getElementById(`line-results-${ti}`);
+    if (!q) { results.innerHTML = ''; return; }
+
+    const matches = lineData
+      .filter(l => l.no.toLowerCase().includes(q) || l.name.toLowerCase().includes(q))
+      .slice(0, 8);
+
+    results.innerHTML = '';
+    if (!matches.length) {
+      results.innerHTML = '<div class="result-empty">검색 결과 없음</div>';
+      return;
+    }
+    matches.forEach(line => {
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.textContent = `${line.no}  ${line.name}`;
+      item.onclick = () => selectLine(ti, line);
+      results.appendChild(item);
+    });
+  }
+
+  function selectLine(ti, line) {
+    document.getElementById(`line-search-${ti}`).value = `${line.no}  ${line.name}`;
+    document.getElementById(`line-results-${ti}`).innerHTML = '';
+    cardState[ti].lineTurnUid = null;
+    cardState[ti].onStationUid = null;
+    cardState[ti].offStationUid = null;
+
+    const bookableTurnUids = new Set(line.fares.map(f => f.lineTurnUid));
+    const turns = line.turns.filter(t => t.useYn && t.bookYn && bookableTurnUids.has(t.uid));
+
+    const turnSel = document.getElementById(`turn-select-${ti}`);
+    turnSel.innerHTML = '<option value="">출발 시간 선택</option>';
+    turns.forEach(turn => {
+      const opt = document.createElement('option');
+      opt.value = turn.uid;
+      opt.textContent = `${turn.beginStation?.departureTime || ''} 출발`;
+      turnSel.appendChild(opt);
+    });
+
+    document.getElementById(`turn-section-${ti}`).style.display = 'block';
+    document.getElementById(`on-station-section-${ti}`).style.display = 'none';
+    document.getElementById(`off-station-section-${ti}`).style.display = 'none';
+  }
+
+  function onTurnChange(ti) {
+    const turnUid = document.getElementById(`turn-select-${ti}`).value;
+    if (!turnUid) return;
+    cardState[ti].lineTurnUid = turnUid;
+    cardState[ti].onStationUid = null;
+    cardState[ti].offStationUid = null;
+    cardState[ti].selectedTurnStations = turnMap[turnUid]?.stations || [];
+
+    document.getElementById(`on-station-section-${ti}`).style.display = 'block';
+    document.getElementById(`on-search-${ti}`).value = '';
+    document.getElementById(`on-results-${ti}`).innerHTML = '';
+    document.getElementById(`off-station-section-${ti}`).style.display = 'none';
+  }
+
+  function onOnSearch(ti) {
+    const q = document.getElementById(`on-search-${ti}`).value.trim().toLowerCase();
+    const results = document.getElementById(`on-results-${ti}`);
+    const stations = (cardState[ti].selectedTurnStations || []).filter(s => s.onYn);
+    const matches = (q ? stations.filter(s => s.name.toLowerCase().includes(q)) : stations).slice(0, 8);
+
+    results.innerHTML = '';
+    if (!matches.length) {
+      results.innerHTML = `<div class="result-empty">${q ? '검색 결과 없음' : '정류장 없음'}</div>`;
+      return;
+    }
+    matches.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.textContent = s.name;
+      item.onclick = () => selectOnStation(ti, s);
+      results.appendChild(item);
+    });
+  }
+
+  function selectOnStation(ti, station) {
+    document.getElementById(`on-search-${ti}`).value = station.name;
+    document.getElementById(`on-results-${ti}`).innerHTML = '';
+    cardState[ti].onStationUid = station.uid;
+    cardState[ti].offStationUid = null;
+
+    const allStations = cardState[ti].selectedTurnStations || [];
+    const onIdx = allStations.findIndex(s => s.uid === station.uid);
+    cardState[ti].offCandidates = allStations.slice(onIdx + 1).filter(s => s.offYn);
+
+    document.getElementById(`off-station-section-${ti}`).style.display = 'block';
+    document.getElementById(`off-search-${ti}`).value = '';
+    document.getElementById(`off-results-${ti}`).innerHTML = '';
+  }
+
+  function onOffSearch(ti) {
+    const q = document.getElementById(`off-search-${ti}`).value.trim().toLowerCase();
+    const results = document.getElementById(`off-results-${ti}`);
+    const candidates = cardState[ti].offCandidates || [];
+    const matches = (q ? candidates.filter(s => s.name.toLowerCase().includes(q)) : candidates).slice(0, 8);
+
+    results.innerHTML = '';
+    if (!matches.length) {
+      results.innerHTML = `<div class="result-empty">${q ? '검색 결과 없음' : '하차 정류장 없음'}</div>`;
+      return;
+    }
+    matches.forEach(s => {
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.textContent = s.name;
+      item.onclick = () => selectOffStation(ti, s);
+      results.appendChild(item);
+    });
+  }
+
+  function selectOffStation(ti, station) {
+    document.getElementById(`off-search-${ti}`).value = station.name;
+    document.getElementById(`off-results-${ti}`).innerHTML = '';
+    cardState[ti].offStationUid = station.uid;
+
+    const info = turnMap[cardState[ti].lineTurnUid];
+    if (info) {
+      const nameInput = document.getElementById(`name-input-${ti}`);
+      if (!nameInput.value.trim()) {
+        nameInput.value = `[${info.lineNo}] ${info.departureTime} 버스`;
+      }
+    }
+
+    document.getElementById(`bus-info-${ti}`).innerHTML = busInfoHtml(ti);
+    document.getElementById(`bus-selector-${ti}`).style.display = 'none';
+  }
+
+  function addTarget() {
+    const ti = configData.targets.length;
+    const newTarget = {
+      name: '', lineTurnUid: '', onStationUid: '', offStationUid: '',
+      weekdays: [], dates: [],
+      seatPreference: { fromRow: 3, preferredColumns: [2, 4] },
+    };
+    configData.targets.push(newTarget);
+    cardState[ti] = { lineTurnUid: '', onStationUid: '', offStationUid: '' };
+    appendTargetCard(ti, newTarget);
+    document.getElementById(`bus-selector-${ti}`).style.display = 'block';
+    document.getElementById(`line-search-${ti}`).focus();
+    document.getElementById(`target-card-${ti}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function removeTarget(ti) {
+    document.getElementById(`target-card-${ti}`)?.remove();
+    configData.targets[ti] = null;
   }
 
   function renderDates(ti, dates) {
@@ -254,33 +569,43 @@
   function addDate(ti) {
     const input = document.getElementById(`dateInput-${ti}`);
     const val = input.value;
-    if (!val) return;
+    if (!val || !configData.targets[ti]) return;
     const target = configData.targets[ti];
     if (!target.dates) target.dates = [];
-    if (!target.dates.includes(val)) {
-      target.dates.push(val);
-      target.dates.sort();
-    }
+    if (!target.dates.includes(val)) { target.dates.push(val); target.dates.sort(); }
     input.value = '';
     renderDates(ti, target.dates);
   }
 
   function removeDate(ti, di) {
-    configData.targets[ti].dates.splice(di, 1);
-    renderDates(ti, configData.targets[ti].dates);
+    const target = configData.targets[ti];
+    if (!target) return;
+    target.dates.splice(di, 1);
+    renderDates(ti, target.dates);
   }
 
   function collectConfig() {
-    configData.targets.forEach((target, ti) => {
-      // 요일
-      const wdBtns = document.querySelectorAll(`#weekdays-${ti} .weekday-btn.active`);
-      target.weekdays = Array.from(wdBtns).map((b) => b.dataset.code);
+    const cards = Array.from(
+      document.getElementById('targets-container').querySelectorAll('.card[id^="target-card-"]')
+    ).sort((a, b) =>
+      parseInt(a.id.replace('target-card-', '')) - parseInt(b.id.replace('target-card-', ''))
+    );
 
-      // 선호 열
-      const colBtns = document.querySelectorAll(`#cols-${ti} .col-btn.active`);
-      if (!target.seatPreference) target.seatPreference = {};
-      target.seatPreference.preferredColumns = Array.from(colBtns).map((b) => parseInt(b.dataset.col));
-      target.seatPreference.fromRow = parseInt(document.getElementById(`fromRow-${ti}`).value) || 3;
+    configData.targets = cards.map(card => {
+      const ti = parseInt(card.id.replace('target-card-', ''));
+      const s = cardState[ti] || {};
+      return {
+        name: document.getElementById(`name-input-${ti}`)?.value || '',
+        lineTurnUid: s.lineTurnUid || '',
+        onStationUid: s.onStationUid || '',
+        offStationUid: s.offStationUid || '',
+        weekdays: Array.from(card.querySelectorAll('.weekday-btn.active')).map(b => b.dataset.code),
+        dates: configData.targets[ti]?.dates || [],
+        seatPreference: {
+          fromRow: parseInt(document.getElementById(`fromRow-${ti}`)?.value) || 3,
+          preferredColumns: Array.from(card.querySelectorAll('.col-btn.active')).map(b => parseInt(b.dataset.col)),
+        },
+      };
     });
     return configData;
   }
@@ -300,16 +625,12 @@
           Accept: 'application/vnd.github.v3+json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          message: 'config: update via GitHub Pages UI',
-          content,
-          sha: fileSha,
-        }),
+        body: JSON.stringify({ message: 'config: update via GitHub Pages UI', content, sha: fileSha }),
       });
       if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
       const data = await res.json();
       fileSha = data.content.sha;
-      setStatus('저장 완료! 다음 Actions 실행 시 반영됩니다.', 'ok');
+      setStatus('저장 완료! 서버에서 git pull 하면 반영됩니다.', 'ok');
     } catch (err) {
       setStatus(`저장 오류: ${err.message}`, 'err');
     }
