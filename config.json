@@ -12,9 +12,9 @@
       ],
       "dates": [],
       "seatPreference": {
-        "fromRow": 3,
+        "fromRow": 5,
         "preferredColumns": [
-          2,
+          1,
           4
         ]
       }
