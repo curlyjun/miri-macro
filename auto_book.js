@@ -50,9 +50,8 @@ async function runAutoBook() {
           break;
         }
 
-        const dateInfo = json.data[0].bookableDates.find(
-          (d) => d.date === targetDate,
-        );
+        const allDates = json.data.flatMap((d) => d.bookableDates);
+        const dateInfo = allDates.find((d) => d.date === targetDate);
         if (!dateInfo) {
           console.log(
             `  ${targetDate} 날짜 정보 없음 (아직 오픈 전일 수 있음)`,
