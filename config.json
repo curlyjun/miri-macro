@@ -10,13 +10,9 @@
         "THU",
         "FRI"
       ],
-      "dates": [],
+      "monitorDates": [],
       "seatPreference": {
-        "fromRow": 5,
-        "preferredColumns": [
-          1,
-          4
-        ]
+        "preferredSeats": [17, 13, 21, 9, 5]
       }
     }
   ]

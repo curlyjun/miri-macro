@@ -3,7 +3,6 @@
 const config = require("./config.json");
 const {
   nowKST,
-  matchesWeekday,
   sendTelegram,
   getBookableDates,
   initCommon,
@@ -21,6 +20,9 @@ async function runMonitor() {
       }
 
       const dates = json.data[0].bookableDates;
+      const todayStr = new Date(Date.now() + 9 * 3600 * 1000)
+        .toISOString()
+        .slice(0, 10);
 
       for (const d of dates) {
         // 이미 예약된 날짜 스킵
@@ -31,15 +33,13 @@ async function runMonitor() {
           continue;
         }
 
-        // 요일 필터
-        if (
-          target.weekdays?.length &&
-          !matchesWeekday(d.weekdayCode, target.weekdays)
-        )
+        // monitorDates 필터: 지정된 날짜가 없으면 이 타겟 스킵
+        if (!target.monitorDates?.length) continue;
+        if (!target.monitorDates.includes(d.date)) continue;
+        if (d.date < todayStr) {
+          console.log(`  [${d.date}] 과거 날짜 - 스킵`);
           continue;
-
-        // 특정 날짜 필터 (dates 설정된 경우만)
-        if (target.dates?.length && !target.dates.includes(d.date)) continue;
+        }
 
         const remaining = d.seatCount - d.bookCount;
 
