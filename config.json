@@ -10,9 +10,7 @@
         "THU",
         "FRI"
       ],
-      "monitorDates": [
-        "2026-05-26"
-      ],
+      "monitorDates": [],
       "seatPreference": {
         "preferredSeats": [
           17,
