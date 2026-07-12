@@ -5,11 +5,16 @@ const {
   nowKST,
   sendTelegram,
   getBookableDates,
+  getBookableSeats,
+  bookSeat,
+  selectBestSeat,
   initCommon,
 } = require("./lib/common");
+const { bookAvailableSeat } = require("./lib/monitor_booking");
 
 async function runMonitor() {
-  console.log(`[${nowKST()}] 모니터링 시작`);
+  const executedAt = nowKST();
+  console.log(`[${executedAt}] 모니터링 시작`);
 
   for (const target of config.targets) {
     try {
@@ -44,13 +49,18 @@ async function runMonitor() {
         const remaining = d.seatCount - d.bookCount;
 
         if (d.bookableYn && d.seatRemainYn) {
-          console.log(`  [${d.date}] 잔여 ${remaining}석! 텔레그램 알림 전송`);
-          await sendTelegram(
-            `🚌 <b>${target.name}</b>\n` +
-              `📅 ${d.date}\n` +
-              `💺 잔여 좌석: ${remaining}석\n` +
-              `⏰ 지금 MiRi 앱에서 예약하세요!`,
-          );
+          console.log(`  [${d.date}] 잔여 ${remaining}석! 예약 시도`);
+          await bookAvailableSeat({
+            target,
+            dateInfo: d,
+            executedAt,
+            deps: {
+              getBookableSeats,
+              selectBestSeat,
+              bookSeat,
+              sendTelegram,
+            },
+          });
         } else {
           console.log(`  [${d.date}] 잔여 없음 (${remaining}석)`);
         }
