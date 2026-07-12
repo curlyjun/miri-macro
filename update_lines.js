@@ -6,10 +6,8 @@ const {
   getBaseUrl,
   getHeaders,
   nowKST,
-  fetchServiceUid,
-  FALLBACK_SERVICE_UID,
-  setServiceUid,
   sendTelegram,
+  initCommon,
 } = require("./lib/common");
 
 const LINE_JSON_PATH = path.join(__dirname, "line.json");
@@ -100,20 +98,7 @@ async function runUpdateLines() {
 }
 
 async function main() {
-  if (!process.env.BEARER_TOKEN && !process.env.MIRI_REFRESH_TOKEN) {
-    console.error(
-      "오류: BEARER_TOKEN 또는 MIRI_REFRESH_TOKEN 환경변수가 필요합니다.",
-    );
-    process.exit(1);
-  }
-
-  // 서비스 UID 동적 조회 (실패 시 폴백)
-  const serviceUid = await fetchServiceUid();
-  if (serviceUid && serviceUid !== FALLBACK_SERVICE_UID) {
-    console.log(`[서비스] UID 업데이트: ${serviceUid}`);
-    setServiceUid(serviceUid);
-  }
-
+  await initCommon();
   await runUpdateLines();
 }
 
