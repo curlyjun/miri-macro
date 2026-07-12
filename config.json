@@ -22,6 +22,17 @@
           5
         ]
       }
+    },
+    {
+      "name": "[6002] 06:45 버스",
+      "lineTurnUid": "202403261046022725754920427LNT",
+      "onStationUid": "202504010101395271849201998STA",
+      "offStationUid": "000MIRI00000000000000000020STA",
+      "weekdays": [],
+      "monitorDates": [],
+      "seatPreference": {
+        "preferredSeats": []
+      }
     }
   ]
 }
