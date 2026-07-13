@@ -32,11 +32,9 @@
       "onStationUid": "202504010101395271849201998STA",
       "offStationUid": "000MIRI00000000000000000020STA",
       "autoBookEnabled": false,
-      "monitorEnabled": true,
+      "monitorEnabled": false,
       "weekdays": [],
-      "monitorDates": [
-        "2026-07-14"
-      ],
+      "monitorDates": [],
       "seatPreference": {
         "preferredSeats": [],
         "fallbackMode": "any"
