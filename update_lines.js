@@ -2,9 +2,12 @@
 
 const fs = require("fs");
 const path = require("path");
+const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
+const { reportFatal } = require("./lib/run-alerts");
 const {
   getBaseUrl,
   getHeaders,
+  requestJson,
   nowKST,
   sendTelegram,
   initCommon,
@@ -14,9 +17,7 @@ const LINE_JSON_PATH = path.join(__dirname, "line.json");
 
 async function fetchLineRoute() {
   const url = `${getBaseUrl()}/line/route?searchText=&sortOrder=no%20asc`;
-  const res = await fetch(url, { headers: getHeaders() });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  return requestJson(url, { headers: getHeaders });
 }
 
 function diffLines(oldData, newData) {
@@ -99,10 +100,21 @@ async function runUpdateLines() {
 
 async function main() {
   await initCommon();
-  await runUpdateLines();
+  const result = await withProcessLock("update-lines", runUpdateLines);
+  if (result.skipped) console.log("[update-lines] 이전 실행이 진행 중이라 건너뜁니다.");
+  return result;
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("치명적 오류:", err);
-  process.exit(1);
+  await reportFatal({
+    scope: "update-lines",
+    error: err,
+    state: new RuntimeState({
+      statePath: path.join(__dirname, "runtime", "state.json"),
+    }),
+    sendTelegram,
+    executedAt: nowKST(),
+  });
+  process.exitCode = 1;
 });

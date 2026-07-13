@@ -1,10 +1,14 @@
 "use strict";
 
-const config = require("./config.json");
+const path = require("path");
+const rawConfig = require("./config.json");
+const { normalizeConfig, validateTarget } = require("./lib/config");
+const { attemptBooking } = require("./lib/booking");
+const { getTargetDate, runAutoBookTargets } = require("./lib/auto-booking");
+const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
+const { escapeHtml } = require("./lib/telegram");
+const { reportFatal } = require("./lib/run-alerts");
 const {
-  WEEKDAY_MAP,
-  getBaseUrl,
-  getHeaders,
   sleep,
   nowKST,
   sendTelegram,
@@ -15,144 +19,123 @@ const {
   initCommon,
 } = require("./lib/common");
 
-async function runAutoBook() {
-  // KST 기준 오늘 + 7일 = 예약 오픈 대상 날짜
-  const nowUtcMs = Date.now();
-  const kstOffsetMs = 9 * 60 * 60 * 1000;
-  const targetKST = new Date(nowUtcMs + kstOffsetMs + 7 * 24 * 60 * 60 * 1000);
-  const targetDate = targetKST.toISOString().slice(0, 10);
-  const targetWeekday = WEEKDAY_MAP[targetKST.getUTCDay()];
-  const targetDateLabel = `${targetDate} (${targetWeekday})`;
+const STATE_PATH = path.join(__dirname, "runtime", "state.json");
+
+async function runAutoBook({
+  config = rawConfig,
+  state = new RuntimeState({ statePath: STATE_PATH }),
+  deps = {},
+} = {}) {
+  const { date: targetDate, weekday: targetWeekday } = getTargetDate();
   const executedAt = nowKST();
-
-  console.log(
-    `[${nowKST()}] 자동 예약 시작 - 대상: ${targetDate} (${targetWeekday})`,
-  );
-
-  for (const target of config.targets) {
-    // 요일 필터
-    if (target.weekdays?.length && !target.weekdays.includes(targetWeekday)) {
-      console.log(
-        `[${target.name}] ${targetDate}(${targetWeekday})은 감시 요일이 아닙니다.`,
-      );
-      continue;
+  const results = [];
+  const normalized = normalizeConfig(config);
+  const validationErrors = [];
+  const targets = normalized.targets.filter((target) => {
+    const validation = validateTarget(target);
+    if (!validation.valid) {
+      validationErrors.push({ target: target.name, message: validation.errors.join(" ") });
+      return false;
     }
+    return true;
+  });
 
-    let booked = false;
+  console.log(`[${executedAt}] 자동 예약 시작 - 대상: ${targetDate} (${targetWeekday})`);
+  const summary = await runAutoBookTargets({
+    targets,
+    targetDate,
+    targetWeekday,
+    deps: {
+      getBookableDates: deps.getBookableDates || getBookableDates,
+      getBookableSeats: deps.getBookableSeats || getBookableSeats,
+      selectBestSeat: deps.selectBestSeat || selectBestSeat,
+      bookSeat: deps.bookSeat || bookSeat,
+      attemptBooking: deps.attemptBooking || attemptBooking,
+      sleep: deps.sleep || sleep,
+      onResult: (item) => results.push(item),
+    },
+  });
+  summary.errors.push(...validationErrors);
+  const sender = deps.sendTelegram || sendTelegram;
 
-    for (let attempt = 1; attempt <= 5 && !booked; attempt++) {
-      try {
-        console.log(`[${target.name}] 예약 시도 ${attempt}/5...`);
-
-        const json = await getBookableDates(target);
-        if (json.resultCode !== 0) {
-          console.error(`API 오류: ${json.resultMessage}`);
-          break;
-        }
-
-        const allDates = json.data.flatMap((d) => d.bookableDates);
-        const dateInfo = allDates.find((d) => d.date === targetDate);
-        if (!dateInfo) {
-          console.log(
-            `  ${targetDate} 날짜 정보 없음 (아직 오픈 전일 수 있음)`,
-          );
-          if (attempt < 5) await sleep(10000);
-          continue;
-        }
-
-        // 이미 예약된 경우
-        const alreadyBooked =
-          dateInfo.myBookRangeCount > 0 ||
-          (dateInfo.myBooks && dateInfo.myBooks.length > 0);
-        if (alreadyBooked) {
-          booked = true;
-          const msg = `✅ <b>${targetDateLabel} 이미 예약되어 있습니다.</b>\n🚌 ${target.name}\n🕐 실행 시간: ${executedAt}`;
-          console.log(msg.replace(/<[^>]+>/g, ""));
-          await sendTelegram(msg);
-          break;
-        }
-
-        if (!dateInfo.bookableYn || !dateInfo.seatRemainYn) {
-          console.log(
-            `  ${targetDate} 예약 불가 (bookable=${dateInfo.bookableYn}, seatRemain=${dateInfo.seatRemainYn})`,
-          );
-          if (attempt < 5) await sleep(10000);
-          continue;
-        }
-
-        // 좌석 조회
-        const allocUid = dateInfo.allocs[0].allocUid;
-        console.log(`  좌석 조회 중 (allocUid=${allocUid})`);
-        const seatsJson = await getBookableSeats(
-          target.lineTurnUid,
-          targetDate,
-          allocUid,
+  for (const { target, dateInfo, result } of results) {
+    const scope = `autobook:${target.name}:${targetDate}`;
+    if (result.status === "BOOKED") {
+      state.recordCompleted(target.name, targetDate, result.seatNo);
+      state.recordSuccess(scope);
+      const info = result.info || {};
+      await sender(
+        `✅ <b>예약 완료!</b>\n` +
+          `🚌 ${escapeHtml(target.name)}\n` +
+          `📅 ${escapeHtml(targetDate)} (${escapeHtml(targetWeekday)})\n` +
+          `💺 ${escapeHtml(result.seatNo)}번 좌석\n` +
+          `⏰ ${escapeHtml(info.departureTimeText)} 출발 → ${escapeHtml(info.arrivalTimeText)} 도착\n` +
+          `📍 ${escapeHtml(info.expectedOnStationName)} → ${escapeHtml(info.expectedOffStationName)}\n` +
+          `🕐 실행 시간: ${escapeHtml(executedAt)}`,
+      );
+    } else if (result.status === "ALREADY_BOOKED") {
+      state.recordSuccess(scope);
+      await sender(
+        `✅ <b>${escapeHtml(targetDate)} 이미 예약되어 있습니다.</b>\n` +
+          `🚌 ${escapeHtml(target.name)}\n🕐 실행 시간: ${escapeHtml(executedAt)}`,
+      );
+    } else if (["NOT_OPEN", "NOT_BOOKABLE", "NO_SEAT", "NO_ALLOC"].includes(result.status)) {
+      const incident = state.recordFailure(scope, result.status);
+      if (incident.notify) {
+        await sender(
+          `❌ <b>자동 예약 실패</b>\n` +
+            `🚌 ${escapeHtml(target.name)}\n📅 ${escapeHtml(targetDate)}\n` +
+            `사유: ${escapeHtml(result.status)}\n` +
+            `빈자리 모니터링 설정이 켜져 있으면 계속 확인합니다.`,
         );
-
-        if (seatsJson.resultCode !== 0) {
-          console.error(`  좌석 조회 오류: ${seatsJson.resultMessage}`);
-          break;
-        }
-
-        const bestSeat = selectBestSeat(seatsJson.data, target.seatPreference);
-        if (!bestSeat) {
-          console.log("  선택 가능한 좌석이 없습니다.");
-          break;
-        }
-
-        // 예약 실행
-        console.log(`  예약 시도: ${bestSeat.seatNo}번 좌석`);
-        const bookResult = await bookSeat(
-          target,
-          targetDate,
-          allocUid,
-          bestSeat.seatNo,
-        );
-
-        if (bookResult.resultCode === 0) {
-          booked = true;
-          const info = bookResult.data[0];
-          const msg =
-            `✅ <b>예약 완료!</b>\n` +
-            `🚌 ${target.name}\n` +
-            `📅 ${targetDateLabel}\n` +
-            `💺 ${bestSeat.seatNo}번 좌석\n` +
-            `⏰ ${info.departureTimeText ?? "07:00"} 출발 → ${info.arrivalTimeText ?? "07:47"} 도착\n` +
-            `📍 ${info.expectedOnStationName ?? ""} → ${info.expectedOffStationName ?? ""}\n` +
-            `🕐 실행 시간: ${executedAt}`;
-          console.log(msg.replace(/<[^>]+>/g, ""));
-          await sendTelegram(msg);
-        } else {
-          console.error(`  예약 실패: ${bookResult.resultMessage}`);
-          if (attempt < 5) await sleep(10000);
-        }
-      } catch (err) {
-        console.error(`  오류 (시도 ${attempt}):`, err.message);
-        if (attempt < 5) await sleep(10000);
       }
     }
+  }
 
-    if (!booked) {
-      const msg =
-        `❌ <b>자동 예약 실패</b>\n` +
-        `🚌 ${target.name}\n` +
-        `📅 ${targetDateLabel}\n` +
-        `🕐 실행 시간: ${executedAt}\n` +
-        `💡 5분마다 빈 자리 모니터링을 시작합니다.`;
-      console.log(msg.replace(/<[^>]+>/g, ""));
-      await sendTelegram(msg);
+  if (summary.errors.length) {
+    const fingerprint = summary.errors
+      .map((item) => `${item.target}:${item.message}`)
+      .sort()
+      .join("|");
+    const incident = state.recordFailure("autobook", fingerprint);
+    if (incident.notify) {
+      await sender(
+        `⚠️ <b>자동예약 실행 오류</b>\n` +
+          summary.errors
+            .map((item) => `• ${escapeHtml(item.target)}: ${escapeHtml(item.message)}`)
+            .join("\n"),
+      );
+    }
+  } else {
+    const recovery = state.recordSuccess("autobook");
+    if (recovery.notify) {
+      await sender(`✅ <b>자동예약 실행 복구됨</b>\n누적 실패 ${recovery.count}회 후 정상화`);
     }
   }
 
   console.log("자동 예약 완료");
+  return summary;
 }
 
 async function main() {
   await initCommon();
-  await runAutoBook();
+  const result = await withProcessLock("autobook", () => runAutoBook());
+  if (result.skipped) console.log("[autobook] 이전 실행이 진행 중이라 건너뜁니다.");
+  return result;
 }
 
-main().catch((err) => {
-  console.error("치명적 오류:", err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(async (error) => {
+    console.error("치명적 오류:", error);
+    await reportFatal({
+      scope: "autobook",
+      error,
+      state: new RuntimeState({ statePath: STATE_PATH }),
+      sendTelegram,
+      executedAt: nowKST(),
+    });
+    process.exitCode = 1;
+  });
+}
+
+module.exports = { main, runAutoBook };

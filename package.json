@@ -2,11 +2,14 @@
   "name": "miri-macro",
   "version": "1.0.0",
   "description": "MiRi 버스 좌석 자동 예약 매크로",
-  "main": "index.js",
+  "main": "monitor.js",
   "scripts": {
-    "start": "node index.js",
-    "monitor": "MODE=monitor node index.js",
-    "autobook": "MODE=auto_book node index.js"
+    "start": "node monitor.js",
+    "monitor": "node monitor.js",
+    "autobook": "node auto_book.js",
+    "observe": "node observe.js",
+    "update-lines": "node update_lines.js",
+    "test": "node --test"
   },
   "dependencies": {
     "dotenv": "^16.4.5"
