@@ -16,14 +16,14 @@
         "2026-07-14"
       ],
       "seatPreference": {
-        "fallbackMode": "any",
         "preferredSeats": [
           17,
           13,
           21,
           9,
           5
-        ]
+        ],
+        "fallbackMode": "any"
       }
     },
     {
@@ -32,12 +32,14 @@
       "onStationUid": "202504010101395271849201998STA",
       "offStationUid": "000MIRI00000000000000000020STA",
       "autoBookEnabled": false,
-      "monitorEnabled": false,
+      "monitorEnabled": true,
       "weekdays": [],
-      "monitorDates": [],
+      "monitorDates": [
+        "2026-07-14"
+      ],
       "seatPreference": {
-        "fallbackMode": "any",
-        "preferredSeats": []
+        "preferredSeats": [],
+        "fallbackMode": "any"
       }
     }
   ]
