@@ -1,0 +1,137 @@
+# MiRi Settings UI Redesign Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Redesign the GitHub Pages settings editor as a concise Apple-inspired configuration console without changing its configuration or GitHub API behavior.
+
+**Architecture:** Keep the application as a single static HTML document. Replace the visual layer in `docs/index.html` with a tokenized CSS system and small presentational markup adjustments while retaining every JavaScript ID, function, and event-handler contract used by the existing configuration workflow.
+
+**Tech Stack:** HTML5, inline CSS, vanilla browser JavaScript, Node.js static server, browser screenshots.
+
+## Global Constraints
+
+- Preserve existing configuration fields, element IDs, JavaScript functions, and GitHub API requests.
+- Use `#0066cc` as the sole light-surface interactive accent; use `#2997ff` only for dark-surface links.
+- Do not add gradients or shadows to UI surfaces, controls, or text.
+- Use system/SF font stacks, 600-weight headings, 400-weight body copy, and no 500 weight.
+- Maintain functional layout from 320px viewport width upward.
+
+---
+
+### Task 1: Establish the Page Shell and Form System
+
+**Files:**
+- Modify: `docs/index.html:7-188`
+- Test: browser rendering at 1440px and 390px widths
+
+**Interfaces:**
+- Consumes: existing `#repo`, `#pat`, `#config-section`, `#status`, `loadConfig()`, and `saveConfig()` DOM contracts.
+- Produces: a global navigation shell, initial connection surface, reusable CSS variables, input styles, button styles, and a sticky save action that later target surfaces inherit.
+
+- [ ] **Step 1: Create a visual baseline**
+
+Run: `npx --yes serve docs -l 4173`
+
+Capture the current page at 1440px and 390px. Expected: the page renders with the existing connection card and no console errors.
+
+- [ ] **Step 2: Replace the page shell and top-level markup**
+
+Update the opening body structure to retain the existing `#repo`, `#pat`, `#config-section`, and `#status` nodes while adding navigation landmarks:
+
+```html
+<header class="global-nav"><div class="nav-inner"><a class="wordmark" href="#top">MiRi</a><span>예약 설정</span></div></header>
+<main id="top">
+  <section class="sub-nav"><div class="content-frame"><h1>예약 설정</h1><span>GitHub Pages</span></div></section>
+  <section class="connection-section"><div class="content-frame connection-grid">...</div></section>
+  <section id="config-section" class="config-section">...</section>
+</main>
+```
+
+Add a CSS token block including `--blue: #0066cc`, `--ink: #1d1d1f`, `--paper: #f5f5f7`, `--tile: #272729`, `--hairline: rgba(0, 0, 0, .08)`, and the SF system font stack. Replace legacy card shadows with flat surfaces, hairlines, and section padding. Give primary actions the class rule `.btn-primary { border-radius: 9999px; background: var(--blue); }` and standard interactive press feedback via `transform: scale(.95)`.
+
+- [ ] **Step 3: Validate form structure without credentials**
+
+Open the static page and check that the repository/PAT fields remain focusable, that the load button triggers the existing missing-field error, and that status text is visible. Expected: no JavaScript errors and the existing Korean validation message appears.
+
+- [ ] **Step 4: Commit the shell update**
+
+```bash
+git add docs/index.html
+git commit -m "style: redesign settings page shell"
+```
+
+### Task 2: Redesign Target Configuration Surfaces and Responsive States
+
+**Files:**
+- Modify: `docs/index.html:190-692`
+- Test: browser rendering and static JavaScript syntax check
+
+**Interfaces:**
+- Consumes: `appendTargetCard(ti, target)`, `buildSeatMap(ti, preferredSeats)`, `renderDates(ti, dates)`, and all current dynamic target element IDs.
+- Produces: target surfaces that preserve dynamic rendering, route search, day selection, seat selection, date management, and sticky saving on desktop and mobile.
+
+- [ ] **Step 1: Add a route-editor visual fixture in the browser**
+
+In browser DevTools or a temporary local console, set a minimal in-memory `configData` object and call the existing `renderConfig()` after adding a target. Expected: one target surface appears and all target controls remain addressable by their generated IDs.
+
+- [ ] **Step 2: Update dynamic target markup to use semantic surface classes**
+
+In `appendTargetCard`, preserve IDs and handlers but replace presentation-only text with concise labels and classes:
+
+```html
+<article class="target-surface" id="target-card-${ti}">
+  <div class="target-heading"><span class="target-index">예약 대상 ${ti + 1}</span><button class="btn-icon" aria-label="예약 대상 삭제" ...>...</button></div>
+  <input class="name-input" id="name-input-${ti}" ... />
+  <div class="route-summary" id="bus-info-${ti}">...</div>
+</article>
+```
+
+Change the status summary generated by `busInfoHtml` to text-only lines, while retaining route, boarding, and alighting values. Keep `.weekday-btn`, `.seat-btn`, `.date-item`, `.search-input`, and `.select-input` class names because existing JavaScript queries them.
+
+- [ ] **Step 3: Implement target, seat, and mobile styles**
+
+Add CSS rules that make `.target-surface` a flat full-width surface with `padding: 48px 0`, use alternating `:nth-child(even)` near-black backgrounds, style `.seat-map-bus` without shadows, and use `@media (max-width: 640px)` to set 24px side padding, wrap the target header, and stack `.date-add-row` controls only when they cannot fit. Ensure `.save-bar` is `position: sticky`, translucent parchment, `backdrop-filter: blur(18px)`, and uses no box shadow.
+
+- [ ] **Step 4: Run syntax and responsive visual checks**
+
+Run: `node --check <(sed -n '/<script>/,/<\\/script>/p' docs/index.html | sed '1d;$d')`
+
+Expected: JavaScript syntax check exits successfully. Then capture 1440px and 390px screenshots after rendering a representative target; verify that no labels, controls, seat rows, or sticky action overlap.
+
+- [ ] **Step 5: Commit the target-surface redesign**
+
+```bash
+git add docs/index.html
+git commit -m "style: refresh booking target editor"
+```
+
+### Task 3: Final Regression and Handoff
+
+**Files:**
+- Modify: `docs/index.html` only if visual defects are found
+- Test: static browser flow and `git diff --check`
+
+**Interfaces:**
+- Consumes: completed styling and existing `loadConfig()`, `addTarget()`, `removeTarget()`, `addDate()`, `removeDate()`, and `saveConfig()` functions.
+- Produces: a verified static editor ready for GitHub Pages publishing.
+
+- [ ] **Step 1: Exercise safe client-only interactions**
+
+Open the page without entering credentials. Verify the missing-credentials message. In a browser console, inject a representative target and verify weekday toggles, seat ranking/removal, date addition/removal, and target removal. Expected: the original behaviors work and no uncaught errors occur.
+
+- [ ] **Step 2: Inspect accessibility and responsive regressions**
+
+At 390px and 1440px, keyboard-tab through buttons and inputs. Expected: a visible blue focus outline appears, icon-only deletion controls have `aria-label`, and controls retain usable tap/click dimensions.
+
+- [ ] **Step 3: Run final checks**
+
+Run: `git diff --check && git status --short`
+
+Expected: no whitespace errors; only intentional `docs/index.html` changes remain after the planned commits.
+
+- [ ] **Step 4: Commit any final correction**
+
+```bash
+git add docs/index.html
+git commit -m "fix: polish settings editor responsiveness"
+```
