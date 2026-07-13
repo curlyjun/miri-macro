@@ -13,5 +13,6 @@ test("Oracle 래퍼가 허용 작업만 실행하고 원격 설정을 검증 후
   assert.match(script, /normalizeConfig/);
   assert.match(script, /validateConfig/);
   assert.match(script, /applied-config-commit/);
+  assert.match(script, /TZ=Asia\/Seoul date/);
   assert.match(script, /npm run "\$TASK"/);
 });

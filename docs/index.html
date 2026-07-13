@@ -413,12 +413,12 @@
       <div class="settings-grid">
         <div>
           <div class="settings-block" id="auto-settings-${ti}">
-            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="auto-book-toggle" id="autoBookEnabled-${ti}" ${target.autoBookEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />자동예약 사용</label><label class="toggle-row"><input type="checkbox" id="everyday-${ti}" ${target.weekdays?.length === 7 ? 'checked' : ''} onchange="toggleEveryday(${ti})" />매일</label></div>
-            <p class="section-label">자동 예약 요일</p><div class="weekday-grid" id="weekdays-${ti}"></div>
+            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="auto-book-toggle" id="autoBookEnabled-${ti}" ${target.autoBookEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />자동예약 사용</label></div>
+            <div id="auto-options-${ti}"><label class="toggle-row"><input type="checkbox" id="everyday-${ti}" ${target.weekdays?.length === 7 ? 'checked' : ''} onchange="toggleEveryday(${ti})" />매일</label><p class="section-label">자동 예약 요일</p><div class="weekday-grid" id="weekdays-${ti}"></div></div>
           </div>
           <div class="settings-block" id="monitor-settings-${ti}">
-            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="monitor-toggle" id="monitorEnabled-${ti}" ${target.monitorEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />빈자리 예약 사용</label><button class="btn btn-secondary btn-small" type="button" onclick="cleanPastDates(${ti})">지난 날짜 정리</button></div>
-            <p class="section-label">모니터링 날짜</p><div class="date-list" id="dates-${ti}"></div><div class="date-add-row"><input type="date" id="dateInput-${ti}" min="${todayKSTDate()}" /><button class="btn btn-secondary btn-small" onclick="addDate(${ti})">날짜 추가</button></div>
+            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="monitor-toggle" id="monitorEnabled-${ti}" ${target.monitorEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />빈자리 예약 사용</label></div>
+            <div id="monitor-options-${ti}"><div class="control-row"><p class="section-label">모니터링 날짜</p><button class="btn btn-secondary btn-small" type="button" onclick="cleanPastDates(${ti})">지난 날짜 정리</button></div><div class="date-list" id="dates-${ti}"></div><div class="date-add-row"><input type="date" id="dateInput-${ti}" min="${todayKSTDate()}" /><button class="btn btn-secondary btn-small" onclick="addDate(${ti})">날짜 추가</button></div></div>
           </div>
         </div>
         <div class="settings-block"><p class="section-label">선호 좌석</p><div class="seat-map-wrapper" id="seat-map-${ti}"></div><p class="section-label" style="margin-top:20px">선호 좌석이 없을 때</p><select class="fallback-select" id="fallback-${ti}" onchange="onSettingsChange(${ti})"><option value="any" ${target.seatPreference?.fallbackMode !== 'preferredOnly' ? 'selected' : ''}>남은 좌석 중 예약</option><option value="preferredOnly" ${target.seatPreference?.fallbackMode === 'preferredOnly' ? 'selected' : ''}>예약하지 않음</option></select></div>
@@ -457,8 +457,8 @@
   function updateControlStates(ti) {
     const autoEnabled = document.getElementById(`autoBookEnabled-${ti}`)?.checked;
     const monitorEnabled = document.getElementById(`monitorEnabled-${ti}`)?.checked;
-    document.getElementById(`auto-settings-${ti}`)?.classList.toggle('settings-disabled', !autoEnabled);
-    document.getElementById(`monitor-settings-${ti}`)?.classList.toggle('settings-disabled', !monitorEnabled);
+    document.getElementById(`auto-options-${ti}`)?.classList.toggle('settings-disabled', !autoEnabled);
+    document.getElementById(`monitor-options-${ti}`)?.classList.toggle('settings-disabled', !monitorEnabled);
   }
 
   function onSettingsChange(ti) {

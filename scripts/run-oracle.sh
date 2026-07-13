@@ -36,6 +36,9 @@ node -e '
 ' "$TEMP_CONFIG"
 
 mv "$TEMP_CONFIG" config.json
-git rev-parse origin/main > runtime/applied-config-commit
+printf '%s|%s\n' \
+  "$(git rev-parse origin/main)" \
+  "$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')" \
+  > runtime/applied-config-commit
 
 npm run "$TASK"

@@ -30,9 +30,17 @@ function kstParts(now = Date.now()) {
   };
 }
 
+function formatAppliedConfig(value) {
+  const [commit = "", syncedAt] = value.trim().split("|", 2);
+  const shortCommit = commit.slice(0, 7);
+  if (!shortCommit) return "로컬 설정";
+  return syncedAt ? `${shortCommit} (${syncedAt} 동기화)` : shortCommit;
+}
+
 function readAppliedCommit() {
   try {
-    return fs.readFileSync(path.join(RUNTIME_DIR, "applied-config-commit"), "utf8").trim();
+    const value = fs.readFileSync(path.join(RUNTIME_DIR, "applied-config-commit"), "utf8");
+    return formatAppliedConfig(value);
   } catch {
     return "로컬 설정";
   }
@@ -169,4 +177,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { kstParts, main, runMonitor };
+module.exports = { formatAppliedConfig, kstParts, main, runMonitor };

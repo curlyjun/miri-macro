@@ -88,3 +88,12 @@ test("페이지에 토글, 폴백, 충돌 복구와 이탈 경고 계약이 있�
   assert.match(page, /reload-conflict/);
   assert.doesNotMatch(page, /configData\.targets = cards\.map/);
 });
+
+test("자동예약과 빈자리 예약의 활성화 토글은 하위 옵션과 별도로 표시한다", () => {
+  assert.match(page, /id="auto-options-\$\{ti\}"/);
+  assert.match(page, /id="monitor-options-\$\{ti\}"/);
+  assert.match(page, /getElementById\(`auto-options-\$\{ti\}`\).*settings-disabled/);
+  assert.match(page, /getElementById\(`monitor-options-\$\{ti\}`\).*settings-disabled/);
+  assert.doesNotMatch(page, /getElementById\(`auto-settings-\$\{ti\}`\).*settings-disabled/);
+  assert.doesNotMatch(page, /getElementById\(`monitor-settings-\$\{ti\}`\).*settings-disabled/);
+});
