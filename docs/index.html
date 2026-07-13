@@ -93,6 +93,14 @@
     .date-remove { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: currentColor; cursor: pointer; font-size: 20px; font-weight: 300; line-height: 1; }
     .date-add-row { display: flex; align-items: center; gap: 8px; }
     .date-add-row input[type="date"] { flex: 1; min-width: 0; }
+    .control-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    .toggle-row { display: inline-flex; grid-template-columns: auto 1fr; align-items: center; gap: 9px; color: currentColor; font-size: 14px; cursor: pointer; }
+    .toggle-row input { width: 36px; height: 20px; accent-color: var(--blue); }
+    .fallback-select { width: 100%; min-height: 44px; border: 1px solid var(--hairline); border-radius: 8px; background: #fff; color: var(--ink); padding: 9px 12px; }
+    .config-preview { min-height: 96px; margin: 28px 0 0; border-left: 2px solid var(--blue); background: var(--paper); color: var(--ink); padding: 14px 16px; font: 400 13px/1.7 "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; white-space: pre-wrap; }
+    .target-surface:nth-child(even) .config-preview { background: var(--dark-alt); color: #fff; }
+    .settings-disabled { opacity: .45; }
+    #reload-conflict { display: none; margin: 0 auto 20px; }
     .add-target-bar { display: flex; justify-content: center; background: var(--paper); padding: 40px 20px; }
     .save-bar { position: sticky; bottom: 0; z-index: 9; display: flex; justify-content: center; border-top: 1px solid var(--hairline); background: rgba(245, 245, 247, .88); padding: 12px 20px; backdrop-filter: blur(18px); }
     .save-bar button { min-width: min(320px, 100%); }
@@ -123,8 +131,10 @@
       <div class="save-bar"><button class="btn btn-primary" onclick="saveConfig()">변경 사항 저장</button></div>
     </section>
     <div id="status" role="status" aria-live="polite"></div>
+    <button id="reload-conflict" class="btn btn-secondary" onclick="loadConfig()">최신 설정 다시 불러오기</button>
   </main>
 
+<script src="./config-utils.js?v=2"></script>
 <script>
   const DAYS = [
     { code: 'MON', label: '월' }, { code: 'TUE', label: '화' },
@@ -138,11 +148,20 @@
   const turnMap = {};    // lineTurnUid -> { lineNo, lineName, departureTime, stations, line }
   const stationMap = {}; // stationUid -> stationName
   const cardState = {};  // ti -> { lineTurnUid, onStationUid, offStationUid, selectedTurnStations, offCandidates }
+  let isDirty = false;
 
   function setStatus(msg, type = '') {
     const el = document.getElementById('status');
     el.textContent = msg;
     el.className = type;
+  }
+
+  function markDirty() {
+    isDirty = true;
+  }
+
+  function todayKSTDate() {
+    return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   }
 
   function getGitHub() {
@@ -158,6 +177,12 @@
     document.getElementById('pat').value = sessionStorage.getItem('gh_pat') || '';
   });
 
+  window.addEventListener('beforeunload', (event) => {
+    if (!isDirty) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
   async function loadConfig() {
     const { repo, pat } = getGitHub();
     if (!repo || !pat) { setStatus('저장소와 PAT를 입력해주세요.', 'err'); return; }
@@ -170,7 +195,11 @@
       const data = await res.json();
       fileSha = data.sha;
       const bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), c => c.charCodeAt(0));
-      configData = JSON.parse(new TextDecoder().decode(bytes));
+      const loadedConfig = JSON.parse(new TextDecoder().decode(bytes));
+      configData = {
+        ...loadedConfig,
+        targets: (loadedConfig.targets || []).filter(Boolean).map(ConfigUtils.normalizeUiTarget),
+      };
 
       setStatus('노선 데이터 로딩 중...');
       try {
@@ -182,6 +211,8 @@
 
       renderConfig();
       document.getElementById('config-section').style.display = 'block';
+      document.getElementById('reload-conflict').style.display = 'none';
+      isDirty = false;
       setStatus('설정을 불러왔습니다.', 'ok');
     } catch (err) {
       setStatus(`오류: ${err.message}`, 'err');
@@ -258,7 +289,7 @@
           badge.innerHTML = `${idx + 1}순위 <b>${seatNo}번</b> <span class="seat-priority-clear">×</span>`;
           badge.title = '클릭하면 해제';
           badge.setAttribute('aria-label', `${idx + 1}순위 ${seatNo}번 좌석 선택 해제`);
-          badge.onclick = () => { selected.splice(idx, 1); render(); };
+          badge.onclick = () => { selected.splice(idx, 1); render(); markDirty(); refreshPreview(ti); };
           summary.appendChild(badge);
         });
       }
@@ -307,6 +338,8 @@
               selected.push(seatNo);
             }
             render();
+            markDirty();
+            refreshPreview(ti);
           };
 
           row.appendChild(btn);
@@ -339,7 +372,7 @@
         <button class="btn-icon" onclick="removeTarget(${ti})" aria-label="예약 대상 삭제" title="예약 대상 삭제">×</button>
       </div>
       <input type="text" class="name-input" id="name-input-${ti}"
-        value="${escHtml(target.name)}" placeholder="예약 이름" />
+        value="${escHtml(target.name)}" placeholder="예약 이름" oninput="onSettingsChange(${ti})" />
       <div class="target-main">
       <div class="route-editor">
         <p class="section-label">노선</p>
@@ -379,11 +412,18 @@
       </div>
       <div class="settings-grid">
         <div>
-          <div class="settings-block"><p class="section-label">자동 예약 요일</p><div class="weekday-grid" id="weekdays-${ti}"></div></div>
-          <div class="settings-block"><p class="section-label">모니터링 날짜</p><div class="date-list" id="dates-${ti}"></div><div class="date-add-row"><input type="date" id="dateInput-${ti}" /><button class="btn btn-secondary btn-small" onclick="addDate(${ti})">날짜 추가</button></div></div>
+          <div class="settings-block" id="auto-settings-${ti}">
+            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="auto-book-toggle" id="autoBookEnabled-${ti}" ${target.autoBookEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />자동예약 사용</label><label class="toggle-row"><input type="checkbox" id="everyday-${ti}" ${target.weekdays?.length === 7 ? 'checked' : ''} onchange="toggleEveryday(${ti})" />매일</label></div>
+            <p class="section-label">자동 예약 요일</p><div class="weekday-grid" id="weekdays-${ti}"></div>
+          </div>
+          <div class="settings-block" id="monitor-settings-${ti}">
+            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="monitor-toggle" id="monitorEnabled-${ti}" ${target.monitorEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />빈자리 예약 사용</label><button class="btn btn-secondary btn-small" type="button" onclick="cleanPastDates(${ti})">지난 날짜 정리</button></div>
+            <p class="section-label">모니터링 날짜</p><div class="date-list" id="dates-${ti}"></div><div class="date-add-row"><input type="date" id="dateInput-${ti}" min="${todayKSTDate()}" /><button class="btn btn-secondary btn-small" onclick="addDate(${ti})">날짜 추가</button></div>
+          </div>
         </div>
-        <div class="settings-block"><p class="section-label">선호 좌석</p><div class="seat-map-wrapper" id="seat-map-${ti}"></div></div>
+        <div class="settings-block"><p class="section-label">선호 좌석</p><div class="seat-map-wrapper" id="seat-map-${ti}"></div><p class="section-label" style="margin-top:20px">선호 좌석이 없을 때</p><select class="fallback-select" id="fallback-${ti}" onchange="onSettingsChange(${ti})"><option value="any" ${target.seatPreference?.fallbackMode !== 'preferredOnly' ? 'selected' : ''}>남은 좌석 중 예약</option><option value="preferredOnly" ${target.seatPreference?.fallbackMode === 'preferredOnly' ? 'selected' : ''}>예약하지 않음</option></select></div>
       </div>
+      <pre class="config-preview" id="preview-${ti}"></pre>
       </div>
       </div>
     `;
@@ -395,13 +435,43 @@
       btn.className = 'weekday-btn' + (target.weekdays?.includes(code) ? ' active' : '');
       btn.textContent = label;
       btn.dataset.code = code;
-      btn.onclick = () => btn.classList.toggle('active');
+      btn.onclick = () => { btn.classList.toggle('active'); onSettingsChange(ti); };
       wdGrid.appendChild(btn);
     });
 
     buildSeatMap(ti, target.seatPreference?.preferredSeats || []);
 
     renderDates(ti, target.monitorDates || []);
+    updateControlStates(ti);
+    refreshPreview(ti);
+  }
+
+  function toggleEveryday(ti) {
+    const checked = document.getElementById(`everyday-${ti}`).checked;
+    document.querySelectorAll(`#weekdays-${ti} .weekday-btn`).forEach(btn => {
+      btn.classList.toggle('active', checked);
+    });
+    onSettingsChange(ti);
+  }
+
+  function updateControlStates(ti) {
+    const autoEnabled = document.getElementById(`autoBookEnabled-${ti}`)?.checked;
+    const monitorEnabled = document.getElementById(`monitorEnabled-${ti}`)?.checked;
+    document.getElementById(`auto-settings-${ti}`)?.classList.toggle('settings-disabled', !autoEnabled);
+    document.getElementById(`monitor-settings-${ti}`)?.classList.toggle('settings-disabled', !monitorEnabled);
+  }
+
+  function onSettingsChange(ti) {
+    markDirty();
+    updateControlStates(ti);
+    refreshPreview(ti);
+  }
+
+  function refreshPreview(ti) {
+    const card = document.getElementById(`target-card-${ti}`);
+    const preview = document.getElementById(`preview-${ti}`);
+    if (!card || !preview) return;
+    preview.textContent = ConfigUtils.buildPreview(collectTarget(ti, card), todayKSTDate());
   }
 
   function toggleBusSelector(ti) {
@@ -549,14 +619,16 @@
 
     document.getElementById(`bus-info-${ti}`).innerHTML = busInfoHtml(ti);
     document.getElementById(`bus-selector-${ti}`).style.display = 'none';
+    onSettingsChange(ti);
   }
 
   function addTarget() {
     const ti = configData.targets.length;
     const newTarget = {
       name: '', lineTurnUid: '', onStationUid: '', offStationUid: '',
+      autoBookEnabled: false, monitorEnabled: false,
       weekdays: [], monitorDates: [],
-      seatPreference: { preferredSeats: [] },
+      seatPreference: { preferredSeats: [], fallbackMode: 'any' },
     };
     configData.targets.push(newTarget);
     cardState[ti] = { lineTurnUid: '', onStationUid: '', offStationUid: '' };
@@ -564,11 +636,13 @@
     document.getElementById(`bus-selector-${ti}`).style.display = 'block';
     document.getElementById(`line-search-${ti}`).focus();
     document.getElementById(`target-card-${ti}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+    markDirty();
   }
 
   function removeTarget(ti) {
     document.getElementById(`target-card-${ti}`)?.remove();
     configData.targets[ti] = null;
+    markDirty();
   }
 
   function renderDates(ti, dates) {
@@ -591,6 +665,7 @@
     if (!target.monitorDates.includes(val)) { target.monitorDates.push(val); target.monitorDates.sort(); }
     input.value = '';
     renderDates(ti, target.monitorDates);
+    onSettingsChange(ti);
   }
 
   function removeDate(ti, di) {
@@ -598,6 +673,33 @@
     if (!target) return;
     target.monitorDates.splice(di, 1);
     renderDates(ti, target.monitorDates);
+    onSettingsChange(ti);
+  }
+
+  function cleanPastDates(ti) {
+    const target = configData.targets[ti];
+    if (!target) return;
+    target.monitorDates = ConfigUtils.removePastMonitorDates(target.monitorDates, todayKSTDate());
+    renderDates(ti, target.monitorDates);
+    onSettingsChange(ti);
+  }
+
+  function collectTarget(ti, card) {
+    const s = cardState[ti] || {};
+    return {
+      name: document.getElementById(`name-input-${ti}`)?.value || '',
+      lineTurnUid: s.lineTurnUid || '',
+      onStationUid: s.onStationUid || '',
+      offStationUid: s.offStationUid || '',
+      autoBookEnabled: document.getElementById(`autoBookEnabled-${ti}`)?.checked || false,
+      monitorEnabled: document.getElementById(`monitorEnabled-${ti}`)?.checked || false,
+      weekdays: Array.from(card.querySelectorAll('.weekday-btn.active')).map(b => b.dataset.code),
+      monitorDates: configData.targets[ti]?.monitorDates || [],
+      seatPreference: {
+        preferredSeats: document.getElementById(`seat-map-${ti}`)._getPreferredSeats?.() || [],
+        fallbackMode: document.getElementById(`fallback-${ti}`)?.value || 'any',
+      },
+    };
   }
 
   function collectConfig() {
@@ -607,29 +709,33 @@
       parseInt(a.id.replace('target-card-', '')) - parseInt(b.id.replace('target-card-', ''))
     );
 
-    configData.targets = cards.map(card => {
+    const targets = cards.map(card => {
       const ti = parseInt(card.id.replace('target-card-', ''));
-      const s = cardState[ti] || {};
-      return {
-        name: document.getElementById(`name-input-${ti}`)?.value || '',
-        lineTurnUid: s.lineTurnUid || '',
-        onStationUid: s.onStationUid || '',
-        offStationUid: s.offStationUid || '',
-        weekdays: Array.from(card.querySelectorAll('.weekday-btn.active')).map(b => b.dataset.code),
-        monitorDates: configData.targets[ti]?.monitorDates || [],
-        seatPreference: {
-          preferredSeats: document.getElementById(`seat-map-${ti}`)._getPreferredSeats?.() || [],
-        },
-      };
+      return collectTarget(ti, card);
     });
-    return configData;
+    return { ...configData, targets };
+  }
+
+  function validateConfigForSave() {
+    const config = collectConfig();
+    const errors = config.targets
+      .map((target, index) => ({ index, ...ConfigUtils.validateUiTarget(target, todayKSTDate()) }))
+      .filter(result => !result.valid);
+    if (!errors.length) return { valid: true, errors: [], config };
+    const first = errors[0];
+    const cards = document.getElementById('targets-container').querySelectorAll('.target-surface[id^="target-card-"]');
+    cards[first.index]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setStatus(`예약 대상 ${first.index + 1}: ${first.errors.join(' ')}`, 'err');
+    return { valid: false, errors, config };
   }
 
   async function saveConfig() {
     const { repo, pat } = getGitHub();
     if (!repo || !pat) { setStatus('저장소와 PAT를 입력해주세요.', 'err'); return; }
-    collectConfig();
-    const jsonStr = JSON.stringify(configData, null, 2) + '\n';
+    const validation = validateConfigForSave();
+    if (!validation.valid) return;
+    const nextConfig = validation.config;
+    const jsonStr = JSON.stringify(nextConfig, null, 2) + '\n';
     const content = btoa(new TextEncoder().encode(jsonStr).reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
     setStatus('저장 중...');
     try {
@@ -642,10 +748,19 @@
         },
         body: JSON.stringify({ message: 'config: update via GitHub Pages UI', content, sha: fileSha }),
       });
+      if (res.status === 409) {
+        setStatus('다른 곳에서 설정이 변경되었습니다. 최신 설정을 다시 불러와주세요.', 'err');
+        document.getElementById('reload-conflict').style.display = 'flex';
+        return;
+      }
       if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
       const data = await res.json();
       fileSha = data.content.sha;
-      setStatus('저장 완료! 서버에서 git pull 하면 반영됩니다.', 'ok');
+      configData = nextConfig;
+      isDirty = false;
+      document.getElementById('reload-conflict').style.display = 'none';
+      renderConfig();
+      setStatus('저장 완료! Oracle의 다음 실행부터 자동 반영됩니다.', 'ok');
     } catch (err) {
       setStatus(`저장 오류: ${err.message}`, 'err');
     }
