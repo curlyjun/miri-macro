@@ -12,6 +12,7 @@ const { reportFatal } = require("./lib/run-alerts");
 const {
   nowKST,
   sendTelegram,
+  flushTelegramOutbox,
   getBookableDates,
   getBookableSeats,
   bookSeat,
@@ -149,6 +150,12 @@ async function runMonitor({
         );
       }
     }
+  }
+
+  try {
+    await (deps.flushTelegramOutbox || flushTelegramOutbox)();
+  } catch (error) {
+    console.error("[Telegram] 큐 처리 실패:", error.message);
   }
 
   console.log(`${modeLabel} 완료`);

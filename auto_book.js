@@ -12,6 +12,7 @@ const {
   sleep,
   nowKST,
   sendTelegram,
+  flushTelegramOutbox,
   getBookableDates,
   getBookableSeats,
   bookSeat,
@@ -111,6 +112,12 @@ async function runAutoBook({
     if (recovery.notify) {
       await sender(`✅ <b>자동예약 실행 복구됨</b>\n누적 실패 ${recovery.count}회 후 정상화`);
     }
+  }
+
+  try {
+    await (deps.flushTelegramOutbox || flushTelegramOutbox)();
+  } catch (error) {
+    console.error("[Telegram] 큐 처리 실패:", error.message);
   }
 
   console.log("자동 예약 완료");

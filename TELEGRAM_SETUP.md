@@ -58,6 +58,7 @@ TELEGRAM_CHAT_ID=내_채팅_ID
 API_TIMEOUT_MS=15000
 ERROR_NOTIFY_COOLDOWN_HOURS=6
 HEALTH_REPORT_HOUR=9
+TELEGRAM_RETRIES=3
 ```
 
 ---
@@ -131,3 +132,23 @@ crontab -e
 - 정상화되면 복구 알림을 한 번 보냅니다.
 - 매일 오전 9시 이후 첫 정상 모니터 실행에서 적용 설정 커밋과 확인 대상을 요약합니다.
 - 런타임 상태와 잠금은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
+
+## 전송 실패 대비
+
+자동예약은 하루 한 번만 실행되므로, 그 순간 텔레그램 전송이 실패하면 예약은 성공해도
+알림만 유실됩니다. 이를 막기 위해 세 가지가 걸려 있습니다.
+
+- **IPv4 우선**: `api.telegram.org`는 AAAA 레코드를 가집니다. IPv6 주소만 있고 실제
+  경로가 없는 서버에서는 MiRi API와 GitHub은 멀쩡한데 텔레그램만 `fetch failed`로
+  타임아웃됩니다. `dns.setDefaultResultOrder("ipv4first")`로 고정합니다.
+- **재시도**: 일시적 네트워크 오류와 5xx는 `TELEGRAM_RETRIES`(기본 3회)만큼 백오프
+  재시도합니다. 4xx는 다시 보내도 같으므로 재시도하지 않습니다.
+- **미전송 큐**: 그래도 실패하면 메시지를 `runtime/outbox.jsonl`에 보관하고, 5분마다
+  도는 monitor가 실행 끝에 재전송합니다. 24시간이 지난 메시지와 텔레그램이 거부한
+  메시지(잘못된 HTML 등)는 큐를 막지 않도록 버립니다.
+
+큐가 쌓여 있는지는 아래로 확인합니다.
+
+```bash
+wc -l runtime/outbox.jsonl
+```
