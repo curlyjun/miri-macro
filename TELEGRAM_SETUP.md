@@ -107,6 +107,8 @@ npm run monitor
 
 `scripts/run-oracle.sh`는 실행 전에 GitHub 원격 `main` 브랜치의 `config.json`만 가져와 검증하고 원자적으로 적용합니다. 동기화나 검증에 실패하면 이전 설정으로 예약하지 않고 실행을 중단합니다.
 
+적용 위치는 저장소의 `config.json`이 아니라 `runtime/config.json`입니다. 추적 중인 파일을 덮어쓰면 VM 작업 트리가 항상 dirty 상태가 되어 코드 배포 시 `git pull`이 막히기 때문입니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 그래서 로컬 개발은 예전과 똑같이 동작합니다.
+
 ```bash
 chmod +x scripts/run-oracle.sh
 crontab -e
@@ -131,7 +133,7 @@ crontab -e
 - 장애가 6시간 이상 계속되면 누적 횟수와 함께 다시 알립니다.
 - 정상화되면 복구 알림을 한 번 보냅니다.
 - 매일 오전 9시 이후 첫 정상 모니터 실행에서 적용 설정 커밋과 확인 대상을 요약합니다.
-- 런타임 상태와 잠금은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
+- 런타임 상태와 잠금, 동기화된 설정은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
 
 ## 전송 실패 대비
 

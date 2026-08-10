@@ -2,8 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const rawConfig = require("./config.json");
-const { normalizeConfig, validateTarget } = require("./lib/config");
+const { loadConfig, normalizeConfig, validateTarget } = require("./lib/config");
 const { attemptBooking } = require("./lib/booking");
 const { runMonitorTargets } = require("./lib/monitoring");
 const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
@@ -49,7 +48,7 @@ function readAppliedCommit() {
 
 async function runMonitor({
   dryRun = false,
-  config = rawConfig,
+  config = loadConfig(),
   state = new RuntimeState({ statePath: STATE_PATH }),
   deps = {},
 } = {}) {

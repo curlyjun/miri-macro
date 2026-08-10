@@ -1,8 +1,7 @@
 "use strict";
 
 const path = require("path");
-const rawConfig = require("./config.json");
-const { normalizeConfig, validateTarget } = require("./lib/config");
+const { loadConfig, normalizeConfig, validateTarget } = require("./lib/config");
 const { attemptBooking } = require("./lib/booking");
 const { getTargetDate, runAutoBookTargets } = require("./lib/auto-booking");
 const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
@@ -23,7 +22,7 @@ const {
 const STATE_PATH = path.join(__dirname, "runtime", "state.json");
 
 async function runAutoBook({
-  config = rawConfig,
+  config = loadConfig(),
   state = new RuntimeState({ statePath: STATE_PATH }),
   deps = {},
 } = {}) {

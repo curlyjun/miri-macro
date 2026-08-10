@@ -16,3 +16,9 @@ test("Oracle 래퍼가 허용 작업만 실행하고 원격 설정을 검증 후
   assert.match(script, /TZ=Asia\/Seoul date/);
   assert.match(script, /npm run "\$TASK"/);
 });
+
+test("Oracle 래퍼는 추적 중인 config.json을 덮어쓰지 않는다", () => {
+  const script = fs.readFileSync(runnerPath, "utf8");
+  assert.match(script, /mv "\$TEMP_CONFIG" runtime\/config\.json/);
+  assert.doesNotMatch(script, /mv "\$TEMP_CONFIG" config\.json/);
+});

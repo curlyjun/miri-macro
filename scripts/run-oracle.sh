@@ -35,7 +35,9 @@ node -e '
   }
 ' "$TEMP_CONFIG"
 
-mv "$TEMP_CONFIG" config.json
+# 추적 중인 config.json이 아니라 runtime/에 적용한다. 저장소 파일을 덮어쓰면
+# 작업 트리가 항상 dirty가 되어 코드 배포 시 git pull이 막힌다.
+mv "$TEMP_CONFIG" runtime/config.json
 printf '%s|%s\n' \
   "$(git rev-parse origin/main)" \
   "$(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M')" \
