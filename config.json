@@ -6,13 +6,15 @@
       "onStationUid": "202504010101395271849201998STA",
       "offStationUid": "000MIRI00000000000000000020STA",
       "autoBookEnabled": true,
-      "monitorEnabled": false,
+      "monitorEnabled": true,
       "weekdays": [
         "MON",
         "THU",
         "FRI"
       ],
-      "monitorDates": [],
+      "monitorDates": [
+        "2026-08-18"
+      ],
       "seatPreference": {
         "preferredSeats": [
           17,
@@ -21,22 +23,6 @@
           9,
           5
         ],
-        "fallbackMode": "any"
-      }
-    },
-    {
-      "name": "6002",
-      "lineTurnUid": "202403261046022725754920427LNT",
-      "onStationUid": "202504010101395271849201998STA",
-      "offStationUid": "000MIRI00000000000000000020STA",
-      "autoBookEnabled": false,
-      "monitorEnabled": true,
-      "weekdays": [],
-      "monitorDates": [
-        "2026-07-30"
-      ],
-      "seatPreference": {
-        "preferredSeats": [],
         "fallbackMode": "any"
       }
     }
