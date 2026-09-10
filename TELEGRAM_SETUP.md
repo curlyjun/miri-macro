@@ -65,15 +65,23 @@ TELEGRAM_RETRIES=3
 
 ## MiRi 토큰 갱신 방법
 
-Bearer 토큰은 약 **12~13일마다 만료**됩니다.
-만료 시 스크립트가 자동으로 텔레그램 알림을 보냅니다.
+액세스 토큰은 약 하루짜리지만 매 실행마다 refresh로 새로 받습니다. MiRi는 refresh할 때
+새 refresh 토큰도 함께 내려주는데, 매크로가 이를 `runtime/auth.json`에 저장해 다음 실행에서
+이어 쓰므로 monitor가 주기적으로 돌고 있으면 수동 갱신이 필요 없습니다. 오래 멈춰 있다가
+refresh 토큰까지 만료되면 스크립트가 텔레그램으로 알립니다.
 
-**갱신 절차:**
-1. 아이폰에서 Proxyman 프록시가 설정된 상태로 MiRi 앱 실행
-2. 좌석 조회 화면으로 이동 (트래픽 발생시키기)
-3. Mac의 Proxyman에서 `commute-miri-api.e-bus.co.kr` 요청 클릭
-4. Request 탭 → `Authorization` 헤더 값에서 `Bearer ` 뒤의 문자열 전체 복사
-5. Oracle 서버의 `.env`에서 `BEARER_TOKEN`과 `MIRI_REFRESH_TOKEN` 업데이트
+**갱신 절차 (브라우저):**
+1. PC 크롬에서 https://commute.e-bus.co.kr/MIRI/login 로그인 (자동 로그인 체크)
+2. `F12` → Console에 아래를 붙여넣기 (막히면 먼저 `allow pasting` 입력)
+   ```js
+   const g = k => localStorage.getItem(k) || sessionStorage.getItem(k);
+   copy(`BEARER_TOKEN="${g("MIRI_ACCESS_TOKEN")}"\nMIRI_REFRESH_TOKEN=${g("MIRI_REFRESH_TOKEN")}`);
+   ```
+3. 클립보드의 두 줄로 `.env`의 `BEARER_TOKEN`, `MIRI_REFRESH_TOKEN`을 교체
+   (`BEARER_TOKEN`에는 `|`가 들어 있으므로 따옴표로 감쌉니다)
+
+`.env`의 `MIRI_REFRESH_TOKEN`이 바뀌면 `runtime/auth.json`의 저장 토큰은 버리고 새 값을 씁니다.
+`MIRI_MEMBER_UID`는 바뀌지 않습니다(액세스 토큰 JWT의 `sub` 값).
 
 ---
 
