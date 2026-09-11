@@ -137,6 +137,19 @@ test("되돌릴 수 없는 동작은 확인하거나 되돌릴 수 있다", () =
   assert.match(page, /beforeunload/);
 });
 
+test("바텀시트는 키보드에 가려지지 않게 보이는 영역에 맞춘다", () => {
+  assert.match(page, /interactive-widget=resizes-content/);
+  assert.match(page, /visualViewport\?\.addEventListener\('resize', fitSheetsToKeyboard\)/);
+  assert.match(page, /\.sheet \{[^}]*margin: auto auto var\(--kb\)/);
+  assert.match(page, /\.sheet \{[^}]*calc\(var\(--vvh\) - 12px\)/);
+});
+
+test("이미 노선이 있으면 키보드 없이 출발 시간 단계에서 연다", () => {
+  const openRoute = page.slice(page.indexOf("function openRoute"), page.indexOf("function closeRoute"));
+  assert.match(openRoute, /step: info \? 2 : 1/);
+  assert.match(openRoute, /if \(info\)[^\n]*option\[aria-pressed="true"\][^\n]*focus/);
+});
+
 test("노선 변경은 초안에 담았다가 적용할 때만 대상에 반영한다", () => {
   assert.match(page, /data-action="route-apply"/);
   assert.match(page, /data-action="route-cancel"/);

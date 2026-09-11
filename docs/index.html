@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
   <meta name="color-scheme" content="light dark" />
   <title>MiRi 예약 설정</title>
   <style>
@@ -12,6 +12,8 @@
       --blue: #0066cc; --blue-ink: #ffffff; --blue-soft: #e8f1fb; --red: #d92d20; --red-soft: #fff4f2;
       --green: #0e7c5a; --green-soft: #eaf6f1; --amber: #b45309; --amber-soft: #fff6e6; --chip: #eef1f4;
       --overlay: rgba(15, 18, 22, .45); --bar: rgba(255, 255, 255, .94); --radius: 14px;
+      /* 키보드에 가려지는 높이와 보이는 영역 높이. fitSheetsToKeyboard()가 갱신한다. */
+      --kb: 0px; --vvh: 100vh;
       --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
@@ -186,7 +188,7 @@
     .snackbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .snackbar button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #7fb8ff; font-weight: 700; }
 
-    .sheet { width: min(560px, 100%); max-width: 100%; max-height: min(88vh, 760px); margin: auto auto 0; padding: 0; border: 0; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -8px 30px rgba(0, 0, 0, .18); }
+    .sheet { width: min(560px, 100%); max-width: 100%; max-height: min(88vh, calc(var(--vvh) - 12px), 760px); margin: auto auto var(--kb); padding: 0; border: 0; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -8px 30px rgba(0, 0, 0, .18); }
     .sheet[open] { display: flex; flex-direction: column; }
     .sheet::backdrop { background: var(--overlay); }
     @media (min-width: 640px) { .sheet { margin: auto; border-radius: 20px; } }
@@ -863,9 +865,10 @@
     const t = findTarget(key);
     if (!t) return;
     const info = state.turns.get(t.lineTurnUid);
+    // 노선이 이미 있으면 보통 시간이나 정류장만 바꾸므로 출발 시간 단계에서 연다(키보드 없이).
     state.route = {
       key,
-      step: 1,
+      step: info ? 2 : 1,
       query: info ? info.line.no : '',
       lineIdx: info ? state.lines.indexOf(info.line) : -1,
       turnUid: info ? t.lineTurnUid : null,
@@ -874,7 +877,8 @@
     };
     renderRoute();
     $('route-sheet').showModal();
-    $('route-body').querySelector('input')?.focus();
+    if (info) $('route-body').querySelector('.option[aria-pressed="true"]')?.focus();
+    else $('route-body').querySelector('input')?.focus();
   }
 
   function closeRoute() {
@@ -1109,6 +1113,19 @@
     event.preventDefault();
     event.returnValue = '';
   });
+
+  // iOS Safari는 키보드가 올라와도 레이아웃 높이를 줄이지 않아 바닥에 붙은 시트가 키보드에 가려진다.
+  // 보이는 영역(visualViewport)을 재서 시트를 키보드 위로 올리고 최대 높이를 줄인다.
+  function fitSheetsToKeyboard() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const covered = Math.max(0, window.innerHeight - (vv.offsetTop + vv.height));
+    document.documentElement.style.setProperty('--kb', `${Math.round(covered)}px`);
+    document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
+  }
+  window.visualViewport?.addEventListener('resize', fitSheetsToKeyboard);
+  window.visualViewport?.addEventListener('scroll', fitSheetsToKeyboard);
+  fitSheetsToKeyboard();
 
   $('reload-btn').innerHTML = ICONS.reload;
   load();
