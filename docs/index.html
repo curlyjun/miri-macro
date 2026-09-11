@@ -2,748 +2,1117 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>MiRi 예약 설정</title>
   <style>
-    :root { --blue: #0066cc; --dark-link: #2997ff; --ink: #1d1d1f; --paper: #f5f5f7; --pearl: #fafafc; --dark: #272729; --dark-alt: #2a2a2c; --hairline: rgba(0, 0, 0, .08); --muted: #6e6e73; }
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f5f7; --card: #ffffff; --ink: #15181c; --muted: #6a7078; --line: #e3e5e9; --line-strong: #cdd1d7;
+      --blue: #0066cc; --blue-ink: #ffffff; --blue-soft: #e8f1fb; --red: #d92d20; --red-soft: #fff4f2;
+      --green: #0e7c5a; --green-soft: #eaf6f1; --amber: #b45309; --amber-soft: #fff6e6; --chip: #eef1f4;
+      --overlay: rgba(15, 18, 22, .45); --bar: rgba(255, 255, 255, .94); --radius: 14px;
+      --font: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1113; --card: #1a1d21; --ink: #e9ebee; --muted: #9aa1a9; --line: #2b3036; --line-strong: #3d434a;
+        --blue: #4c9dff; --blue-ink: #06121f; --blue-soft: rgba(76, 157, 255, .16); --red: #ff6b5e; --red-soft: rgba(255, 107, 94, .12);
+        --green: #3ccf97; --green-soft: rgba(60, 207, 151, .14); --amber: #f0a73b; --amber-soft: rgba(240, 167, 59, .14); --chip: #262a30;
+        --overlay: rgba(0, 0, 0, .6); --bar: rgba(26, 29, 33, .94);
+      }
+    }
     *, *::before, *::after { box-sizing: border-box; }
-    html { background: var(--paper); scroll-behavior: smooth; }
-    body { margin: 0; background: var(--paper); color: var(--ink); font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 17px; font-weight: 400; line-height: 1.47; letter-spacing: -.22px; }
-    button, input, select { font: inherit; }
-    button { -webkit-tap-highlight-color: transparent; }
-    button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid #0071e3; outline-offset: 2px; }
-    .content-frame { width: min(980px, calc(100% - 40px)); margin: 0 auto; }
-    .global-nav { height: 44px; background: #000; color: #fff; font-size: 12px; line-height: 1; letter-spacing: -.12px; }
-    .nav-inner { width: min(980px, calc(100% - 40px)); height: 100%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-    .wordmark { color: #fff; font-weight: 600; font-size: 14px; letter-spacing: 0; text-decoration: none; }
-    .sub-nav { position: sticky; top: 0; z-index: 10; height: 64px; background: rgba(245, 245, 247, .86); border-bottom: 1px solid var(--hairline); backdrop-filter: blur(18px); }
-    .sub-nav .content-frame { height: 100%; display: flex; align-items: center; justify-content: space-between; }
-    .sub-nav h1 { margin: 0; font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 21px; font-weight: 600; line-height: 1.19; letter-spacing: -.23px; }
-    .sub-nav span { color: var(--muted); font-size: 14px; }
-    .connection-section { background: #fff; padding: 80px 0; }
-    .connection-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); gap: 80px; align-items: start; }
-    .eyebrow, .section-label, .target-index { margin: 0 0 8px; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
-    .connection-copy h2 { margin: 0 0 12px; font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 40px; font-weight: 600; line-height: 1.1; letter-spacing: -.37px; }
-    .connection-copy p:last-child { max-width: 420px; margin: 0; color: var(--muted); }
-    .connection-form { display: grid; gap: 16px; }
-    label { display: grid; gap: 5px; color: var(--ink); font-size: 14px; font-weight: 600; letter-spacing: -.22px; }
-    input[type="text"], input[type="password"], input[type="date"], .select-input { width: 100%; min-height: 44px; border: 1px solid var(--hairline); border-radius: 8px; background: #fff; color: var(--ink); padding: 10px 12px; }
-    input::placeholder { color: #86868b; }
-    .form-note { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .btn, button.btn { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 9999px; padding: 9px 18px; font-size: 14px; font-weight: 400; line-height: 1.29; letter-spacing: -.22px; cursor: pointer; transition: transform .15s ease, background-color .15s ease, border-color .15s ease; }
-    .btn:active, button.btn:active, .btn-icon:active, .weekday-btn:active, .seat-btn:active { transform: scale(.95); }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { background: #0071e3; }
-    .btn-secondary { background: transparent; border-color: var(--hairline); color: var(--blue); }
-    .btn-secondary:hover { border-color: var(--blue); }
-    .btn-small { min-height: 36px; padding: 7px 14px; font-size: 13px; }
-    .config-section { display: none; padding-bottom: 112px; }
-    #targets-container { background: var(--paper); }
-    .target-surface { padding: 64px 0; background: #fff; color: var(--ink); }
-    .target-surface:nth-child(even) { background: var(--dark); color: #fff; }
-    .target-surface:nth-child(even) .content-frame { --surface-field: #fff; }
-    .target-surface:nth-child(even) .section-label, .target-surface:nth-child(even) .target-index, .target-surface:nth-child(even) .seat-map-legend { color: #cccccc; }
-    .target-surface:nth-child(even) .route-summary, .target-surface:nth-child(even) .bus-selector, .target-surface:nth-child(even) .date-item, .target-surface:nth-child(even) .seat-map-bus { background: var(--dark-alt); border-color: rgba(255, 255, 255, .16); }
-    .target-surface:nth-child(even) .route-summary span { color: #fff; }
-    .target-surface:nth-child(even) .btn-secondary { border-color: rgba(255, 255, 255, .45); color: var(--dark-link); }
-    .target-surface:nth-child(even) .name-input { color: #fff; border-color: rgba(255, 255, 255, .35); }
-    .target-content { width: min(980px, calc(100% - 40px)); margin: 0 auto; }
-    .target-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
-    .target-index { margin: 0; }
-    .name-input { width: 100%; border: 0; border-bottom: 1px solid var(--hairline); border-radius: 0; background: transparent; color: var(--ink); padding: 0 0 10px; font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 34px; font-weight: 600; line-height: 1.15; letter-spacing: -.37px; }
-    .name-input:focus-visible { border-bottom-color: var(--blue); outline: 0; }
-    .btn-icon { display: inline-grid; width: 36px; height: 36px; place-items: center; flex: 0 0 auto; border: 1px solid var(--hairline); border-radius: 50%; background: transparent; color: currentColor; cursor: pointer; font-size: 22px; font-weight: 300; line-height: 1; }
-    .btn-icon:hover { border-color: currentColor; }
-    .target-main { display: grid; gap: 32px; margin-top: 24px; }
-    .route-summary { display: grid; gap: 4px; border: 1px solid var(--hairline); background: var(--paper); padding: 16px 18px; }
-    .bus-info-item { color: var(--muted); font-size: 14px; line-height: 1.5; }
-    .bus-info-item span { color: var(--ink); font-weight: 600; }
-    .route-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .bus-selector { border: 1px solid var(--hairline); background: var(--pearl); padding: 24px; }
-    .search-input { width: 100%; min-height: 44px; border: 1px solid var(--hairline); border-radius: 9999px; background: #fff; color: var(--ink); padding: 10px 20px; }
-    .search-results { margin-top: 8px; overflow: hidden; border-radius: 8px; }
-    .search-results:not(:empty) { border: 1px solid var(--hairline); }
-    .result-item, .result-empty { padding: 10px 14px; background: #fff; color: var(--ink); font-size: 14px; }
-    .result-item { border-bottom: 1px solid var(--hairline); cursor: pointer; }
-    .result-item:last-child { border-bottom: 0; }
-    .result-item:hover { background: var(--paper); color: var(--blue); }
-    .result-empty { color: var(--muted); }
-    .settings-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(300px, 1.1fr); gap: 48px; align-items: start; }
-    .settings-block { padding-top: 4px; }
-    .settings-block + .settings-block { margin-top: 32px; }
-    .section-label { margin-top: 0; margin-bottom: 12px; }
-    .weekday-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .weekday-btn { width: 42px; height: 42px; border: 1px solid var(--hairline); border-radius: 9999px; background: transparent; color: currentColor; cursor: pointer; font-size: 14px; font-weight: 400; }
-    .weekday-btn.active { border-color: var(--blue); background: var(--blue); color: #fff; }
-    .seat-preference-summary { display: flex; flex-wrap: wrap; gap: 8px; min-height: 32px; margin-bottom: 14px; }
-    .seat-priority { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 9999px; background: var(--blue); color: #fff; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-    .seat-priority b { font-weight: 600; }
-    .seat-priority-clear { opacity: .75; }
-    .seat-empty { color: var(--muted); font-size: 12px; }
-    .seat-map-labels { display: grid; grid-template-columns: 34px 34px 16px 34px 34px; gap: 3px; justify-content: center; margin-bottom: 6px; color: var(--muted); font-size: 10px; text-align: center; }
-    .seat-map-bus { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--hairline); background: var(--paper); padding: 12px 8px; }
-    .seat-map-row { display: flex; align-items: center; justify-content: center; gap: 3px; }
-    .seat-aisle { width: 16px; flex: 0 0 16px; }
-    .seat-btn { width: 34px; height: 30px; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; border: 1px solid var(--hairline); border-radius: 5px; background: #fff; color: var(--ink); cursor: pointer; font-size: 11px; font-weight: 400; padding: 0; }
-    .seat-btn:hover { border-color: var(--blue); color: var(--blue); }
-    .seat-btn.selected { border-color: var(--blue); background: var(--blue); color: #fff; }
-    .seat-map-legend { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .date-list { display: grid; gap: 8px; margin-bottom: 10px; }
-    .date-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--hairline); background: var(--paper); padding: 10px 12px; font-size: 14px; }
-    .date-remove { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: currentColor; cursor: pointer; font-size: 20px; font-weight: 300; line-height: 1; }
-    .date-add-row { display: flex; align-items: center; gap: 8px; }
-    .date-add-row input[type="date"] { flex: 1; min-width: 0; }
-    .control-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
-    .toggle-row { display: inline-flex; grid-template-columns: auto 1fr; align-items: center; gap: 9px; color: currentColor; font-size: 14px; cursor: pointer; }
-    .toggle-row input { width: 36px; height: 20px; accent-color: var(--blue); }
-    .fallback-select { width: 100%; min-height: 44px; border: 1px solid var(--hairline); border-radius: 8px; background: #fff; color: var(--ink); padding: 9px 12px; }
-    .config-preview { min-height: 96px; margin: 28px 0 0; border-left: 2px solid var(--blue); background: var(--paper); color: var(--ink); padding: 14px 16px; font: 400 13px/1.7 "SF Pro Text", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; white-space: pre-wrap; }
-    .target-surface:nth-child(even) .config-preview { background: var(--dark-alt); color: #fff; }
-    .settings-disabled { opacity: .45; }
-    #reload-conflict { display: none; margin: 0 auto 20px; }
-    .add-target-bar { display: flex; justify-content: center; background: var(--paper); padding: 40px 20px; }
-    .save-bar { position: sticky; bottom: 0; z-index: 9; display: flex; justify-content: center; border-top: 1px solid var(--hairline); background: rgba(245, 245, 247, .88); padding: 12px 20px; backdrop-filter: blur(18px); }
-    .save-bar button { min-width: min(320px, 100%); }
-    #status { width: min(980px, calc(100% - 40px)); min-height: 28px; margin: 0 auto; padding: 12px 0 20px; color: var(--muted); font-size: 14px; text-align: center; }
-    #status.ok { color: var(--blue); }
-    #status.err { border-left: 2px solid var(--blue); color: var(--ink); text-align: left; padding-left: 12px; }
-    @media (max-width: 640px) { .content-frame, .target-content { width: min(100% - 40px, 980px); } .connection-section { padding: 48px 0; } .connection-grid, .settings-grid { grid-template-columns: 1fr; gap: 40px; } .connection-copy h2 { font-size: 34px; } .target-surface { padding: 48px 0; } .name-input { font-size: 28px; } .target-heading { align-items: flex-start; } .bus-selector { padding: 18px; } .date-add-row { align-items: stretch; flex-direction: column; } .date-add-row .btn { width: 100%; } .save-bar { padding: 12px 20px; } }
+    [hidden] { display: none !important; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 400 15px/1.5 var(--font); letter-spacing: -.01em; }
+    button, input { font: inherit; color: inherit; }
+    button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    button:disabled { cursor: default; }
+    :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+    /* 기본 입력칸 규칙은 :where()로 감싸 우선순위를 0으로 둔다. 컴포넌트 규칙이 항상 이긴다. */
+    :where(input[type="text"], input[type="search"], input[type="date"]) {
+      width: 100%; min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: 10px;
+      background: var(--card); padding: 10px 12px; font-size: 16px;
+    }
+
+    .app-bar { position: sticky; top: 0; z-index: 20; background: var(--bar); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px); border-bottom: 1px solid var(--line); padding-top: env(safe-area-inset-top); }
+    .app-bar-inner { max-width: 720px; margin: 0 auto; height: 56px; padding: 0 8px 0 16px; display: flex; align-items: center; gap: 10px; }
+    .app-bar h1 { margin: 0; flex: 1; font-size: 18px; font-weight: 700; }
+    .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+    .live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+    .live[data-tone="ok"]::before { background: var(--green); }
+    .live[data-tone="warn"] { color: var(--amber); }
+    .live[data-tone="warn"]::before { background: var(--amber); }
+    .live[data-tone="error"] { color: var(--red); font-weight: 600; }
+    .live[data-tone="error"]::before { background: var(--red); }
+    .icon-btn { flex: 0 0 auto; width: 44px; height: 44px; display: inline-grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+    .icon-btn:hover { background: var(--chip); color: var(--ink); }
+    .icon-btn svg { width: 20px; height: 20px; }
+
+    .page { max-width: 720px; margin: 0 auto; padding: 16px 16px calc(120px + env(safe-area-inset-bottom)); display: grid; gap: 14px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+    .upcoming { padding: 16px; }
+    .eyebrow { margin: 0 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .pending-tag { padding: 2px 8px; border-radius: 999px; background: var(--amber-soft); color: var(--amber); font-size: 11.5px; }
+    .plan { margin: 0; display: grid; gap: 10px; }
+    .plan > div { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: baseline; }
+    .plan dt { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .plan dd { margin: 0; }
+    .plan b { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .plan .ok { color: var(--green); font-weight: 600; }
+    .plan .bad { color: var(--red); font-weight: 600; }
+    .who { display: block; font-size: 12px; color: var(--muted); }
+    .empty-plan { margin: 0; color: var(--muted); }
+    .skeleton { display: grid; gap: 10px; }
+    .targets > .skeleton { padding: 18px 16px; }
+    .skeleton span { display: block; height: 12px; border-radius: 6px; background: var(--chip); }
+    .load-error { margin: 0; color: var(--red); font-weight: 600; }
+    .targets { display: grid; gap: 14px; }
+
+    .target.has-error { border-color: color-mix(in srgb, var(--red) 50%, var(--line)); }
+    .target-head { display: flex; align-items: flex-start; gap: 2px; padding: 6px 6px 6px 0; }
+    .target-toggle { flex: 1; min-width: 0; display: grid; gap: 3px; padding: 10px 8px 10px 16px; border: 0; border-radius: 12px; background: none; text-align: left; }
+    .target-name { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; overflow-wrap: anywhere; }
+    .target-name::after { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-top: -3px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+    .target.is-open .target-name::after { margin-top: 3px; transform: rotate(-135deg); }
+    .target-route { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+    .chip { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12px; font-weight: 600; }
+    .chip.on { background: var(--blue-soft); color: var(--blue); }
+    .chip.warn { background: var(--red-soft); color: var(--red); }
+    .target-body { display: grid; gap: 20px; padding: 18px 16px 20px; border-top: 1px solid var(--line); }
+    .divider { height: 1px; margin: 0 -16px; background: var(--line); }
+
+    .field { display: grid; gap: 6px; }
+    .field > label { font-size: 13px; font-weight: 700; color: var(--muted); }
+    .input.is-error { border-color: var(--red); background: var(--red-soft); }
+    .field-error { margin: 0; color: var(--red); font-size: 13px; font-weight: 600; }
+    .group { display: grid; gap: 12px; }
+    .group-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .group-head h3 { margin: 0; font-size: 13px; font-weight: 700; color: var(--muted); }
+    .count { font-size: 12.5px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .link-btn { min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--blue); font-weight: 700; }
+    .route-box { display: grid; gap: 6px; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; }
+    .route-box.is-error { border-color: var(--red); background: var(--red-soft); }
+    .route-line { font-weight: 700; }
+    .route-line small { margin-left: 6px; color: var(--muted); font-weight: 400; }
+    .route-stops { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 14px; }
+    .route-stops dt { color: var(--muted); font-size: 12.5px; line-height: 1.7; }
+    .route-stops dd { margin: 0; }
+    .route-stops time { margin-left: 6px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 44px; cursor: pointer; }
+    .switch-row strong { display: block; font-size: 16px; }
+    .switch-row small { display: block; color: var(--muted); font-size: 13px; }
+    .switch { appearance: none; -webkit-appearance: none; position: relative; flex: 0 0 auto; width: 51px; height: 31px; margin: 0; border-radius: 999px; background: var(--line-strong); cursor: pointer; transition: background-color .2s; }
+    .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s; }
+    .switch:checked { background: var(--blue); }
+    .switch:checked::after { transform: translateX(20px); }
+
+    .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+    .day-btn { min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: 12px; background: var(--card); font-weight: 600; }
+    .day-btn.is-weekend { color: var(--muted); }
+    .day-btn[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--blue-ink); }
+    .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+    .quick-btn { min-height: 44px; padding: 0 16px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+    .hint { margin: 0; color: var(--muted); font-size: 13px; }
+    .hint.is-warn { color: var(--amber); font-weight: 600; }
+
+    .strip { display: flex; gap: 6px; margin: 0 -2px; padding: 2px 2px 6px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; }
+    .strip::-webkit-scrollbar { display: none; }
+    .date-btn { flex: 0 0 52px; min-height: 62px; display: grid; justify-items: center; align-content: center; gap: 1px; border: 1.5px solid var(--line-strong); border-radius: 12px; background: var(--card); scroll-snap-align: start; }
+    .date-btn .m { height: 13px; color: var(--muted); font-size: 10.5px; font-weight: 700; }
+    .date-btn .d { font-size: 17px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .date-btn .w { color: var(--muted); font-size: 11.5px; }
+    .date-btn.is-weekend .d { color: var(--muted); }
+    .date-btn.is-booked { border-color: transparent; background: var(--green-soft); }
+    .date-btn.is-booked .d, .date-btn.is-booked .w { color: var(--green); }
+    .date-btn[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--blue-ink); }
+    .date-btn[aria-pressed="true"] .m, .date-btn[aria-pressed="true"] .d, .date-btn[aria-pressed="true"] .w { color: inherit; }
+    .date-btn.is-booked[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: var(--card); }
+    .extra-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+    .date-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 2px 0 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 13px; font-weight: 700; }
+    .date-chip button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: inherit; }
+    .more-date { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+    .more-date input { width: auto; min-height: 40px; font-size: 15px; }
+    .notice { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 6px 6px 12px; border-radius: 10px; background: var(--amber-soft); color: var(--amber); font-size: 13px; font-weight: 600; }
+    .notice button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--card); color: var(--amber); font-weight: 700; }
+
+    .ranks { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .ranks li { display: flex; align-items: center; gap: 2px; padding: 2px 2px 2px 8px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); font-weight: 700; }
+    .rank-no { display: grid; place-items: center; width: 22px; height: 22px; margin-right: 6px; border-radius: 50%; background: var(--blue); color: var(--blue-ink); font-size: 12px; }
+    .rank-seat { flex: 1; font-size: 14px; font-variant-numeric: tabular-nums; }
+    .rank-btn { width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: var(--blue); font-size: 13px; }
+    .rank-btn:disabled { opacity: .3; }
+    .bus { width: 100%; max-width: 340px; margin: 0 auto; }
+    .bus-front { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 8px 12px; border-radius: 16px 16px 6px 6px; background: var(--chip); color: var(--muted); font-size: 12px; font-weight: 700; }
+    .bus-front span:last-child { text-align: right; }
+    .seats { display: grid; gap: 6px; padding-top: 12px; }
+    .seat-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) 22px repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .seat { position: relative; min-height: 44px; border: 1.5px solid var(--line-strong); border-radius: 10px; background: var(--card); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .seat[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--blue-ink); }
+    .seat .rank { position: absolute; top: -8px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; border: 1.5px solid var(--blue); border-radius: 999px; background: var(--card); color: var(--blue); font-size: 11px; line-height: 17px; }
+    .seg { display: grid; margin: 0; padding: 0; border: 0; }
+    .seg legend { margin-bottom: 8px; padding: 0; color: var(--muted); font-size: 13px; font-weight: 700; }
+    .seg-options { display: grid; grid-template-columns: 1fr 1fr; padding: 3px; border-radius: 12px; background: var(--chip); }
+    .seg-options label { position: relative; display: grid; place-items: center; min-height: 40px; border-radius: 10px; color: var(--muted); font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; }
+    .seg-options input { position: absolute; opacity: 0; pointer-events: none; }
+    .seg-options label:has(input:checked) { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .14); }
+    .seg-options label:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+    .add-target { min-height: 52px; border: 1.5px dashed var(--line-strong); border-radius: var(--radius); background: transparent; color: var(--blue); font-size: 15px; font-weight: 700; }
+
+    .save-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bar); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px); }
+    .save-bar-inner { max-width: 720px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+    .save-msg { flex: 1; min-width: 0; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 14px; font-weight: 600; }
+    .save-msg::before { content: ""; flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); }
+    .save-msg span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .save-bar[data-tone="dirty"] .save-msg { color: var(--ink); }
+    .save-bar[data-tone="dirty"] .save-msg::before { background: #f59e0b; }
+    .save-bar[data-tone="saved"] .save-msg { color: var(--green); }
+    .save-bar[data-tone="saved"] .save-msg::before { background: var(--green); }
+    .save-bar[data-tone="error"] .save-msg { color: var(--red); }
+    .save-bar[data-tone="error"] .save-msg::before { background: var(--red); }
+    .btn { min-height: 44px; padding: 0 20px; border: 1.5px solid transparent; border-radius: 999px; font-size: 15px; font-weight: 700; white-space: nowrap; }
+    .btn-primary { background: var(--blue); color: var(--blue-ink); }
+    .btn-primary:disabled { background: var(--chip); color: var(--muted); }
+    .btn-secondary { background: transparent; border-color: currentColor; color: var(--blue); }
+    .btn-secondary:disabled { opacity: .4; }
+    .save-bar[data-tone="error"] .btn-secondary { color: var(--red); }
+    .btn-danger-text { background: transparent; color: var(--red); }
+
+    .snackbar { position: fixed; left: 50%; bottom: calc(78px + env(safe-area-inset-bottom)); z-index: 31; width: min(520px, calc(100% - 32px)); display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 6px 6px 16px; border-radius: 14px; background: #1f2328; color: #fff; font-size: 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, .22); transform: translateX(-50%); }
+    .snackbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .snackbar button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #7fb8ff; font-weight: 700; }
+
+    .sheet { width: min(560px, 100%); max-width: 100%; max-height: min(88vh, 760px); margin: auto auto 0; padding: 0; border: 0; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -8px 30px rgba(0, 0, 0, .18); }
+    .sheet[open] { display: flex; flex-direction: column; }
+    .sheet::backdrop { background: var(--overlay); }
+    @media (min-width: 640px) { .sheet { margin: auto; border-radius: 20px; } }
+    @media (prefers-reduced-motion: no-preference) { .sheet[open] { animation: sheet-in .22s ease-out; } }
+    @keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
+    .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 10px 6px 16px; }
+    .sheet-head h2 { margin: 0; font-size: 18px; }
+    .sheet-body { min-height: 0; padding: 4px 16px 14px; overflow-y: auto; }
+    .sheet-body > p { margin: 0; color: var(--muted); }
+    .sheet-foot { display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
+    .sheet-foot .btn { flex: 1; }
+    .confirm-actions { display: grid; gap: 6px; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
+    .text-btn { min-height: 44px; padding: 0 10px; border: 0; background: none; color: var(--muted); font-weight: 600; }
+    .stepper { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0 16px 10px; list-style: none; }
+    .stepper button { max-width: 150px; min-height: 32px; padding: 0 12px; overflow: hidden; border: 0; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .stepper button.is-done { background: var(--blue-soft); color: var(--blue); }
+    .stepper button[aria-current="step"] { background: var(--blue); color: var(--blue-ink); }
+    .stepper button:disabled { opacity: .55; }
+    .search-input { border-radius: 999px; padding: 10px 18px; }
+    .options { margin: 10px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; list-style: none; }
+    .options li + li { border-top: 1px solid var(--line); }
+    .option { width: 100%; min-height: 48px; display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 8px; padding: 8px 14px; border: 0; background: transparent; text-align: left; }
+    .option.no-time { grid-template-columns: auto 1fr; gap: 10px; }
+    .option time { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .option small { color: var(--muted); }
+    .option:hover { background: var(--chip); }
+    .option[aria-pressed="true"] { background: var(--blue-soft); color: var(--blue); font-weight: 700; }
+    .option[aria-pressed="true"] time, .option[aria-pressed="true"] small { color: var(--blue); }
+    .sheet-note { margin: 10px 0 0; color: var(--muted); font-size: 12.5px; }
   </style>
 </head>
 <body>
-  <header class="global-nav"><div class="nav-inner"><a class="wordmark" href="#top">MiRi</a><span>예약 설정</span></div></header>
-  <main id="top">
-    <section class="sub-nav"><div class="content-frame"><h1>예약 설정</h1><span>이 Mac</span></div></section>
-    <section class="connection-section">
-      <div class="content-frame connection-grid">
-        <div class="connection-copy"><p class="eyebrow">MiRi Macro</p><h2>내 일정에 맞춘<br />예약 자동화</h2><p>이 Mac에 저장된 설정을 불러와 버스, 요일, 선호 좌석과 모니터링 날짜를 관리합니다.</p></div>
-        <div class="connection-form">
-          <p class="form-note">저장하면 이 Mac의 runtime/config.json에 바로 반영되고, 다음 실행부터 적용됩니다.</p>
-          <div><button class="btn btn-primary" onclick="loadConfig()">설정 다시 불러오기</button></div>
-        </div>
-      </div>
-    </section>
-    <section id="config-section" class="config-section">
-      <div id="targets-container"></div>
-      <div class="add-target-bar"><button class="btn btn-secondary" onclick="addTarget()">예약 대상 추가</button></div>
-      <div class="save-bar"><button class="btn btn-primary" onclick="saveConfig()">변경 사항 저장</button></div>
-    </section>
-    <div id="status" role="status" aria-live="polite"></div>
-    <button id="reload-conflict" class="btn btn-secondary" onclick="loadConfig()">최신 설정 다시 불러오기</button>
+  <header class="app-bar">
+    <div class="app-bar-inner">
+      <h1>MiRi 예약</h1>
+      <span class="live" id="live-status" data-tone="idle">확인 기록 없음</span>
+      <button type="button" class="icon-btn" id="reload-btn" data-action="reload" aria-label="서버에서 설정 다시 불러오기" title="다시 불러오기"></button>
+    </div>
+  </header>
+
+  <main class="page" id="page" aria-busy="true">
+    <section class="card upcoming" id="upcoming" aria-label="앞으로 할 일"></section>
+    <div class="targets" id="targets"></div>
+    <button type="button" class="add-target" id="add-target" data-action="add-target" hidden>＋ 예약 대상 추가</button>
   </main>
 
-<script src="./config-utils.js?v=2"></script>
+  <div class="save-bar" id="save-bar" data-tone="idle">
+    <div class="save-bar-inner">
+      <p class="save-msg" role="status" aria-live="polite"><span id="save-text">불러오는 중…</span></p>
+      <button type="button" class="btn btn-primary" id="save-btn" data-action="save" disabled>저장</button>
+    </div>
+  </div>
+
+  <div class="snackbar" id="snackbar" role="status" hidden>
+    <span id="snack-text"></span>
+    <button type="button" data-action="undo">되돌리기</button>
+  </div>
+
+  <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
+    <div class="sheet-head"><h2 id="confirm-title">저장하지 않은 변경이 있어요</h2></div>
+    <div class="sheet-body"><p id="confirm-text"></p></div>
+    <div class="confirm-actions">
+      <button type="button" class="btn btn-primary" data-action="confirm-keep">계속 편집</button>
+      <button type="button" class="btn btn-danger-text" data-action="confirm-discard">버리고 다시 불러오기</button>
+    </div>
+  </dialog>
+
+  <dialog class="sheet" id="route-sheet" aria-labelledby="route-title">
+    <div class="sheet-head"><h2 id="route-title">노선 선택</h2><button type="button" class="text-btn" data-action="route-cancel">취소</button></div>
+    <ol class="stepper" id="route-steps" aria-label="단계"></ol>
+    <div class="sheet-body" id="route-body"></div>
+    <div class="sheet-foot" id="route-foot"></div>
+  </dialog>
+
+<script src="./config-utils.js?v=3"></script>
 <script>
-  const DAYS = [
-    { code: 'MON', label: '월' }, { code: 'TUE', label: '화' },
-    { code: 'WED', label: '수' }, { code: 'THU', label: '목' },
-    { code: 'FRI', label: '금' }, { code: 'SAT', label: '토' },
-    { code: 'SUN', label: '일' },
-  ];
-  let configData = null;
-  let configVersion = '';
-  let lineData = [];
-  const turnMap = {};    // lineTurnUid -> { lineNo, lineName, departureTime, stations, line }
-  const stationMap = {}; // stationUid -> stationName
-  const cardState = {};  // ti -> { lineTurnUid, onStationUid, offStationUid, selectedTurnStations, offCandidates }
-  let isDirty = false;
+  'use strict';
+  const U = ConfigUtils;
+  const DAYS = [['MON', '월'], ['TUE', '화'], ['WED', '수'], ['THU', '목'], ['FRI', '금'], ['SAT', '토'], ['SUN', '일']];
+  const DAY_LABEL = Object.fromEntries(DAYS);
+  const WEEKDAY_CODES = ['MON', 'TUE', 'WED', 'THU', 'FRI'];
+  const MAX_SEATS = 5;
+  const KST_OFFSET_MS = 9 * 3600 * 1000;
+  const FRESH_CHECK_MS = 12 * 60 * 1000;
+  const ROUTE_STEPS = ['노선', '출발 시간', '승차', '하차'];
+  const ICONS = {
+    reload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>',
+  };
 
-  function setStatus(msg, type = '') {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = type;
-  }
+  const $ = (id) => document.getElementById(id);
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  function markDirty() {
-    isDirty = true;
-  }
+  // 화면은 모두 이 상태에서 그린다. targets의 _key는 저장 전 비교(countChanges)와 되돌리기용 클라이언트 전용 값이다.
+  const state = {
+    loaded: false, loadError: null, version: '', savedAt: null,
+    extra: {}, base: [], targets: [], expanded: new Set(),
+    showErrors: false, saving: false, saveError: null, conflict: false, flash: null,
+    lines: [], turns: new Map(), status: null, route: null, undo: null, seatHint: null,
+  };
+  let keySeq = 0;
+  let snackTimer = null;
+  const newKey = () => `t${++keySeq}`;
 
-  function todayKSTDate() {
-    return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-  }
+  const today = () => U.kstToday();
+  const fmt = (date) => U.formatShortDate(date, today());
+  const hhmm = (ms) => new Date(ms + KST_OFFSET_MS).toISOString().slice(11, 16);
+  const whenLabel = (ms) => (U.kstToday(ms) === today() ? hhmm(ms) : `${fmt(U.kstToday(ms))} ${hhmm(ms)}`);
+  const findTarget = (key) => state.targets.find((t) => t._key === key);
+  const targetName = (t) => t.name.trim() || '이름 없는 예약';
+  const changeCount = () => (state.loaded ? U.countChanges(state.base, state.targets) : 0);
+  const validations = () => state.targets.map((t) => ({ key: t._key, ...U.validateUiTarget(t, today()) }));
 
   async function responseError(res) {
     const body = await res.json().catch(() => ({}));
     return body.error || `설정 서버 ${res.status}`;
   }
 
-  window.addEventListener('DOMContentLoaded', () => loadConfig());
+  // ───────── 노선 데이터 ─────────
+  function indexLines(lines) {
+    state.lines = lines;
+    state.turns = new Map();
+    for (const line of lines) {
+      for (const turn of line.turns || []) if (turn.useYn) state.turns.set(turn.uid, { line, turn });
+    }
+  }
+  function bookableTurns(line) {
+    const fares = new Set((line.fares || []).map((f) => f.lineTurnUid));
+    return (line.turns || []).filter((t) => t.useYn && t.bookYn && fares.has(t.uid));
+  }
+  const stationOf = (turn, uid) => (turn?.stations || []).find((s) => s.uid === uid) || null;
+  const stationTime = (s, kind) => (kind === 'off' ? s.arrivalTime || s.departureTime : s.departureTime || s.arrivalTime) || '';
+  const departure = (turn) => turn?.beginStation?.departureTime || turn?.stations?.[0]?.departureTime || '';
 
-  window.addEventListener('beforeunload', (event) => {
-    if (!isDirty) return;
-    event.preventDefault();
-    event.returnValue = '';
-  });
+  function routeSummary(t) {
+    if (!t.lineTurnUid) return '노선을 골라 주세요';
+    const info = state.turns.get(t.lineTurnUid);
+    if (!info) return state.lines.length ? '노선 정보를 찾을 수 없어요' : '노선 정보를 불러오는 중이에요';
+    const on = stationOf(info.turn, t.onStationUid);
+    const off = stationOf(info.turn, t.offStationUid);
+    return `${info.line.no} ${departure(info.turn)} 출발 · ${on?.name || '승차 미선택'} → ${off?.name || '하차 미선택'}`;
+  }
 
-  async function loadConfig() {
-    setStatus('불러오는 중...');
-    try {
-      const res = await fetch('api/config', { cache: 'no-store' });
-      if (!res.ok) throw new Error(await responseError(res));
-      const data = await res.json();
-      configVersion = data.version;
-      const loadedConfig = data.config;
-      configData = {
-        ...loadedConfig,
-        targets: (loadedConfig.targets || []).filter(Boolean).map(ConfigUtils.normalizeUiTarget),
-      };
+  // ───────── 예약 결과 ─────────
+  // 예약 기록은 예약 당시의 대상 이름으로 남는다. 저장 전에 이름을 바꿔도 이어지도록 저장된 이름도 보고,
+  // 대상이 하나뿐이면 모든 기록을 그 대상의 것으로 본다.
+  function bookedDatesFor(t) {
+    const names = new Set([t.name, state.base.find((b) => b._key === t._key)?.name]);
+    return (state.status?.completed || [])
+      .filter((c) => c.date >= today() && (state.targets.length === 1 || names.has(c.target)))
+      .map((c) => c.date);
+  }
+  function latestCompleted() {
+    const items = [...(state.status?.completed || [])];
+    items.sort((a, b) => (b.bookedAt || 0) - (a.bookedAt || 0) || String(b.date).localeCompare(String(a.date)));
+    return items[0] || null;
+  }
+  // 지난 날짜의 NOT_OPEN 같은 기록은 복구 없이 남으므로 최근 하루 안의 실패만 문제로 본다.
+  const activeFailures = () => (state.status?.failures || []).filter((f) => Date.now() - (f.lastAt || 0) < 24 * 3600 * 1000);
+  const scopeLabel = (scope) => (scope.includes('autobook') ? '자동예약' : scope.includes('monitor') ? '빈자리 확인' : scope);
 
-      setStatus('노선 데이터 로딩 중...');
-      try {
-        const lineRes = await fetch('line.json');
-        if (lineRes.ok) buildLineMaps((await lineRes.json()).data || []);
-      } catch (e) {
-        console.warn('line.json 로딩 실패:', e.message);
+  // ───────── 그리기 ─────────
+  function renderAll() {
+    renderLive();
+    renderUpcoming();
+    renderTargets();
+    renderSaveBar();
+    $('add-target').hidden = !state.loaded;
+    $('page').setAttribute('aria-busy', String(!state.loaded));
+  }
+
+  function renderLive() {
+    const live = $('live-status');
+    const failures = activeFailures();
+    const checkedAt = state.status?.checkedAt ? Date.parse(state.status.checkedAt) : null;
+    let tone = 'idle';
+    let text = '확인 기록 없음';
+    if (failures.length) {
+      tone = 'error';
+      text = `실패 ${failures.length}건`;
+    } else if (checkedAt) {
+      const fresh = Date.now() - checkedAt < FRESH_CHECK_MS;
+      tone = fresh ? 'ok' : 'warn';
+      text = fresh ? `${hhmm(checkedAt)} 확인` : `${whenLabel(checkedAt)} 이후 확인 없음`;
+    }
+    live.dataset.tone = tone;
+    live.textContent = text;
+    live.title = checkedAt ? `마지막 빈자리 확인 ${whenLabel(checkedAt)}` : '';
+  }
+
+  function planRow(label, html) {
+    return `<div><dt>${label}</dt><dd>${html}</dd></div>`;
+  }
+
+  function renderUpcoming() {
+    const box = $('upcoming');
+    if (state.loadError) {
+      box.innerHTML = `<p class="load-error">설정을 불러오지 못했어요 · ${esc(state.loadError)}</p>`;
+      return;
+    }
+    if (!state.loaded) {
+      box.innerHTML = '<div class="skeleton" aria-hidden="true"><span style="width: 32%"></span><span style="width: 86%"></span><span style="width: 64%"></span></div>';
+      return;
+    }
+    const multi = state.targets.length > 1;
+    const rows = [];
+    for (const t of state.targets) {
+      const who = multi ? `<span class="who">${esc(targetName(t))}</span>` : '';
+      if (t.autoBookEnabled) {
+        const [run] = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 1, booked: bookedDatesFor(t) });
+        rows.push(planRow('자동예약', run
+          ? `<b>${fmt(run.runDate)} 10:00</b>에 ${fmt(run.targetDate)} 좌석 예약${who}`
+          : `요일을 고르면 일정이 보여요${who}`));
       }
+      if (t.monitorEnabled) {
+        // 이미 예약된 날짜는 빈자리 확인에서 건너뛰므로 남은 날짜만 보여준다.
+        const booked = new Set(bookedDatesFor(t));
+        const future = t.monitorDates.filter((d) => d >= today());
+        const pending = future.filter((d) => !booked.has(d));
+        rows.push(planRow('빈자리', pending.length
+          ? `<b>${pending.slice(0, 3).map(fmt).join(', ')}</b>${pending.length > 3 ? ` 외 ${pending.length - 3}일` : ''} 취소표를 5분마다 확인${who}`
+          : `${future.length ? '고른 날짜는 모두 예약됐어요' : '확인할 날짜가 없어요'}${who}`));
+      }
+    }
+    // 앞으로 탈 예약이 있으면 날짜순으로, 없으면 가장 최근 결과를 보여준다.
+    const upcomingBooked = (state.status?.completed || [])
+      .filter((c) => c.date >= today())
+      .sort((a, b) => a.date.localeCompare(b.date));
+    if (upcomingBooked.length) {
+      const names = [...new Set(upcomingBooked.map((c) => c.target))];
+      rows.push(planRow('예약됨', `<span class="ok">${upcomingBooked.slice(0, 3).map((c) => `${fmt(c.date)} ${esc(c.seatNo)}번`).join(' · ')}${upcomingBooked.length > 3 ? ` 외 ${upcomingBooked.length - 3}건` : ''}</span>${multi ? `<span class="who">${esc(names.join(', '))}</span>` : ''}`));
+    } else {
+      const recent = latestCompleted();
+      if (recent) {
+        rows.push(planRow('최근 결과', `<span class="ok">${fmt(recent.date)} ${esc(recent.seatNo)}번 예약 완료${recent.bookedAt ? ` · ${whenLabel(recent.bookedAt)}` : ''}</span>${multi ? `<span class="who">${esc(recent.target)}</span>` : ''}`));
+      }
+    }
+    const failures = activeFailures();
+    if (failures.length) {
+      rows.push(planRow('문제', `<span class="bad">${failures.map((f) => `${esc(scopeLabel(f.scope))} ${f.count}회 실패`).join(', ')}</span><span class="who">텔레그램 알림에서 원인을 확인하세요</span>`));
+    }
+    const pending = changeCount() > 0 ? '<span class="pending-tag">저장하면 이렇게 바뀌어요</span>' : '';
+    box.innerHTML = `<p class="eyebrow"><span>앞으로 할 일</span>${pending}</p>`
+      + (rows.length ? `<dl class="plan">${rows.join('')}</dl>` : '<p class="empty-plan">켜진 예약이 없어요. 아래에서 자동예약이나 빈자리 예약을 켜세요.</p>');
+  }
 
-      renderConfig();
-      document.getElementById('config-section').style.display = 'block';
-      document.getElementById('reload-conflict').style.display = 'none';
-      isDirty = false;
-      setStatus('설정을 불러왔습니다.', 'ok');
-    } catch (err) {
-      setStatus(`오류: ${err.message}`, 'err');
+  function summaryChips(t, v) {
+    const chips = [];
+    if (t.autoBookEnabled) {
+      const days = t.weekdays.length === 7 ? '매일' : t.weekdays.map((d) => DAY_LABEL[d]).join('·') || '요일 없음';
+      chips.push(`<span class="chip on">자동 · ${days}</span>`);
+    }
+    if (t.monitorEnabled) {
+      const future = t.monitorDates.filter((d) => d >= today());
+      const dates = future.length ? future.slice(0, 2).map(fmt).join(', ') + (future.length > 2 ? ` 외 ${future.length - 2}` : '') : '날짜 없음';
+      chips.push(`<span class="chip on">빈자리 · ${dates}</span>`);
+    }
+    if (!t.autoBookEnabled && !t.monitorEnabled) chips.push('<span class="chip">예약 꺼짐</span>');
+    const seats = t.seatPreference.preferredSeats;
+    if (seats.length) chips.push(`<span class="chip">${seats.slice(0, 3).join('·')}번${seats.length > 3 ? ' 외' : ''} 우선</span>`);
+    if (v && !v.valid) chips.push(`<span class="chip warn">고칠 곳 ${Object.keys(v.fields).length}</span>`);
+    return chips.join('');
+  }
+
+  function renderTargets() {
+    const box = $('targets');
+    if (!state.loaded) {
+      box.innerHTML = state.loadError ? '' : '<div class="card skeleton" aria-hidden="true"><span style="width: 46%; height: 16px"></span><span style="width: 82%"></span><span style="width: 58%"></span></div>';
+      return;
+    }
+    box.innerHTML = state.targets.map(cardHtml).join('');
+    alignStrips(box);
+  }
+
+  // 처음 그릴 때는 날짜 띠를 첫 선택 날짜가 보이게 옮긴다. 다시 그릴 때는 renderCard가 위치를 유지한다.
+  function alignStrips(root) {
+    for (const strip of root.querySelectorAll('.strip')) {
+      const picked = strip.querySelector('[aria-pressed="true"]');
+      if (picked) strip.scrollLeft = Math.max(0, picked.offsetLeft - strip.offsetLeft - 60);
     }
   }
 
-  function buildLineMaps(data) {
-    lineData = data;
-    data.forEach(line => {
-      line.turns.forEach(turn => {
-        if (!turn.useYn) return;
-        turnMap[turn.uid] = {
-          lineNo: line.no,
-          lineName: line.name,
-          departureTime: turn.beginStation?.departureTime || '',
-          stations: turn.stations || [],
-          line,
-        };
-        (turn.stations || []).forEach(s => { if (s.uid) stationMap[s.uid] = s.name; });
-      });
-    });
+  function renderCard(key) {
+    const node = document.querySelector(`[data-key="${key}"]`);
+    const t = findTarget(key);
+    if (!node || !t) return renderTargets();
+    const focusId = document.activeElement?.dataset?.fid;
+    const oldStrip = node.querySelector('.strip');
+    const stripScroll = oldStrip?.scrollLeft || 0;
+    node.outerHTML = cardHtml(t);
+    const fresh = document.querySelector(`[data-key="${key}"]`);
+    const strip = fresh?.querySelector('.strip');
+    if (strip && oldStrip) strip.scrollLeft = stripScroll;
+    else if (fresh) alignStrips(fresh);
+    if (focusId) document.querySelector(`[data-fid="${CSS.escape(focusId)}"]`)?.focus({ preventScroll: true });
   }
 
-  function escHtml(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  function cardHtml(t) {
+    const k = t._key;
+    const open = state.expanded.has(k);
+    const v = state.showErrors ? U.validateUiTarget(t, today()) : null;
+    const name = targetName(t);
+    return `<article class="card target${open ? ' is-open' : ''}${v && !v.valid ? ' has-error' : ''}" data-key="${k}">
+      <div class="target-head">
+        <button type="button" class="target-toggle" data-action="toggle-card" data-fid="${k}:toggle" aria-expanded="${open}" aria-controls="${k}-body">
+          <span class="target-name">${esc(name)}</span>
+          <span class="target-route">${esc(routeSummary(t))}</span>
+          <span class="chips">${summaryChips(t, v)}</span>
+        </button>
+        <button type="button" class="icon-btn" data-action="delete-target" data-fid="${k}:delete" aria-label="${esc(name)} 삭제" title="삭제">${ICONS.trash}</button>
+      </div>
+      ${open ? `<div class="target-body" id="${k}-body">${bodyHtml(t, v?.fields || {})}</div>` : ''}
+    </article>`;
   }
 
-  function busInfoHtml(ti) {
-    const s = cardState[ti] || {};
-    const info = turnMap[s.lineTurnUid];
-    const onName = s.onStationUid ? (stationMap[s.onStationUid] || '알 수 없음') : '—';
-    const offName = s.offStationUid ? (stationMap[s.offStationUid] || '알 수 없음') : '—';
-    const busLine = info ? `${info.lineNo}  ${info.departureTime} 출발` : (s.lineTurnUid ? '노선 정보 없음 (line.json 확인)' : '—');
+  const errorHtml = (id, message) => (message ? `<p class="field-error" id="${id}">${esc(message)}</p>` : '');
+
+  function bodyHtml(t, f) {
+    const k = t._key;
+    const seats = t.seatPreference.preferredSeats;
+    const hint = state.seatHint === k
+      ? `<p class="hint is-warn" aria-live="polite">최대 ${MAX_SEATS}석까지 고를 수 있어요. 먼저 하나를 빼 주세요.</p>`
+      : `<p class="hint" aria-live="polite">좌석을 누르면 누른 순서대로 우선순위가 매겨져요.</p>`;
     return `
-      <div class="bus-info-item">노선 <span>${escHtml(busLine)}</span></div>
-      <div class="bus-info-item">승차 <span>${escHtml(onName)}</span> · 하차 <span>${escHtml(offName)}</span></div>
-    `;
+      <div class="field" data-error-for="name">
+        <label for="${k}-name">예약 이름</label>
+        <input id="${k}-name" type="text" class="input${f.name ? ' is-error' : ''}" data-input="name" data-fid="${k}:name" value="${esc(t.name)}" placeholder="예: 출근 06:35" autocomplete="off"${f.name ? ` aria-invalid="true" aria-describedby="${k}-name-err"` : ''}>
+        ${errorHtml(`${k}-name-err`, f.name)}
+      </div>
+      <section class="group" data-error-for="route" aria-labelledby="${k}-route-h">
+        <div class="group-head"><h3 id="${k}-route-h">노선</h3><button type="button" class="link-btn" data-action="open-route" data-fid="${k}:route">${t.lineTurnUid ? '노선 변경' : '노선 고르기'}</button></div>
+        <div class="route-box${f.route ? ' is-error' : ''}">${routeBoxHtml(t)}</div>
+        ${errorHtml(`${k}-route-err`, f.route)}
+      </section>
+      <div class="divider"></div>
+      <section class="group" data-error-for="weekdays">
+        <label class="switch-row"><span><strong>자동예약</strong><small>매일 10:00에 7일 뒤 좌석을 예약해요</small></span>
+          <input type="checkbox" role="switch" class="switch" data-toggle="autoBookEnabled" data-fid="${k}:auto"${t.autoBookEnabled ? ' checked' : ''}></label>
+        ${t.autoBookEnabled ? autoHtml(t, f) : ''}
+      </section>
+      <div class="divider"></div>
+      <section class="group" data-error-for="monitorDates">
+        <label class="switch-row"><span><strong>빈자리 예약</strong><small>고른 날짜에 취소표가 나오면 5분 안에 잡아요</small></span>
+          <input type="checkbox" role="switch" class="switch" data-toggle="monitorEnabled" data-fid="${k}:monitor"${t.monitorEnabled ? ' checked' : ''}></label>
+        ${t.monitorEnabled ? monitorHtml(t, f) : ''}
+      </section>
+      <div class="divider"></div>
+      <section class="group" aria-labelledby="${k}-seat-h">
+        <div class="group-head"><h3 id="${k}-seat-h">선호 좌석</h3><span class="count">${seats.length}/${MAX_SEATS}</span></div>
+        ${ranksHtml(t)}
+        ${seatMapHtml(t)}
+        ${hint}
+        <fieldset class="seg"><legend>선호 좌석이 모두 차면</legend><div class="seg-options">
+          <label><input type="radio" name="${k}-fallback" value="any" data-input="fallback"${t.seatPreference.fallbackMode !== 'preferredOnly' ? ' checked' : ''}>남은 좌석 예약</label>
+          <label><input type="radio" name="${k}-fallback" value="preferredOnly" data-input="fallback"${t.seatPreference.fallbackMode === 'preferredOnly' ? ' checked' : ''}>예약 안 함</label>
+        </div></fieldset>
+      </section>`;
   }
 
-  function renderConfig() {
-    const container = document.getElementById('targets-container');
-    container.innerHTML = '';
-    configData.targets.forEach((target, ti) => {
-      cardState[ti] = {
-        lineTurnUid: target.lineTurnUid || '',
-        onStationUid: target.onStationUid || '',
-        offStationUid: target.offStationUid || '',
-      };
-      appendTargetCard(ti, target);
-    });
+  function routeBoxHtml(t) {
+    const info = state.turns.get(t.lineTurnUid);
+    if (!t.lineTurnUid || !info) return `<p class="hint">${esc(routeSummary(t))}</p>`;
+    const on = stationOf(info.turn, t.onStationUid);
+    const off = stationOf(info.turn, t.offStationUid);
+    const stop = (s, kind) => (s ? `${esc(s.name)}<time>${esc(stationTime(s, kind))}</time>` : '—');
+    return `<div class="route-line">${esc(info.line.no)} · ${esc(departure(info.turn))} 출발<small>${esc(U.formatLineName(info.line.name))}</small></div>
+      <dl class="route-stops"><dt>승차</dt><dd>${stop(on, 'on')}</dd><dt>하차</dt><dd>${stop(off, 'off')}</dd></dl>`;
   }
 
-  function buildSeatMap(ti, preferredSeats) {
-    const wrapper = document.getElementById(`seat-map-${ti}`);
-    if (!wrapper) return;
+  function autoHtml(t, f) {
+    const k = t._key;
+    const on = new Set(t.weekdays);
+    const runs = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 3, booked: bookedDatesFor(t) });
+    const days = DAYS.map(([code, label]) => `<button type="button" class="day-btn${code === 'SAT' || code === 'SUN' ? ' is-weekend' : ''}" data-action="toggle-day" data-day="${code}" data-fid="${k}:day:${code}" aria-pressed="${on.has(code)}">${label}</button>`).join('');
+    const quick = [['weekdays', '평일'], ['everyday', '매일'], ['none', '모두 해제']]
+      .map(([set, label]) => `<button type="button" class="quick-btn" data-action="quick-days" data-set="${set}" data-fid="${k}:quick:${set}">${label}</button>`).join('');
+    return `<div class="days" role="group" aria-label="자동예약 요일">${days}</div>
+      <div class="quick">${quick}</div>
+      ${runs.length ? `<p class="hint">다음 예약 대상 ${runs.map((r) => fmt(r.targetDate)).join(' · ')} (각각 7일 전 10:00)</p>` : ''}
+      ${errorHtml(`${k}-days-err`, f.weekdays)}`;
+  }
 
-    const selected = Array.isArray(preferredSeats) ? [...preferredSeats] : [];
+  function monitorHtml(t, f) {
+    const k = t._key;
+    const now = today();
+    const strip = U.dateStrip(now, 14);
+    const inStrip = new Set(strip.map((s) => s.date));
+    const booked = new Set(bookedDatesFor(t));
+    const selected = new Set(t.monitorDates);
+    const past = t.monitorDates.filter((d) => d < now);
+    const future = t.monitorDates.filter((d) => d >= now);
+    const extra = future.filter((d) => !inStrip.has(d));
+    const buttons = strip.map((s, i) => {
+      const on = selected.has(s.date);
+      const isBooked = booked.has(s.date);
+      return `<button type="button" class="date-btn${s.weekend ? ' is-weekend' : ''}${isBooked ? ' is-booked' : ''}" data-action="toggle-date" data-date="${s.date}" data-fid="${k}:date:${s.date}" aria-pressed="${on}" aria-label="${fmt(s.date)}${isBooked ? ', 이미 예약됨' : ''}"${isBooked && !on ? ' disabled' : ''}><span class="m">${i === 0 || s.day === 1 ? `${s.month}월` : ''}</span><span class="d">${s.day}</span><span class="w">${isBooked ? '예약됨' : s.weekday}</span></button>`;
+    }).join('');
+    const extraChips = extra.map((d) => `<span class="date-chip">${fmt(d)}<button type="button" data-action="remove-date" data-date="${d}" aria-label="${fmt(d)} 빼기">×</button></span>`).join('');
+    return `<div class="strip" role="group" aria-label="빈자리 확인 날짜">${buttons}</div>
+      <div class="extra-dates">${extraChips}<label class="more-date">다른 날짜<input type="date" data-input="extra-date" data-fid="${k}:extra-date" min="${now}"></label></div>
+      ${past.length ? `<div class="notice"><span>지난 날짜 ${past.length}개가 남아 있어요</span><button type="button" data-action="clean-past">정리</button></div>` : ''}
+      <p class="hint">${future.length ? `고른 날짜 ${future.map(fmt).join(', ')}` : '확인할 날짜를 눌러 고르세요.'}</p>
+      ${errorHtml(`${k}-dates-err`, f.monitorDates)}`;
+  }
 
-    function render() {
-      wrapper.innerHTML = '';
+  function ranksHtml(t) {
+    const k = t._key;
+    const seats = t.seatPreference.preferredSeats;
+    if (!seats.length) return '';
+    return `<ol class="ranks">${seats.map((seat, i) => `<li><span class="rank-no">${i + 1}</span><span class="rank-seat">${esc(seat)}번</span>
+      <button type="button" class="rank-btn" data-action="seat-up" data-seat="${seat}" data-fid="${k}:up:${seat}" aria-label="${seat}번 순위 올리기"${i === 0 ? ' disabled' : ''}>▲</button>
+      <button type="button" class="rank-btn" data-action="seat-down" data-seat="${seat}" data-fid="${k}:down:${seat}" aria-label="${seat}번 순위 내리기"${i === seats.length - 1 ? ' disabled' : ''}>▼</button>
+      <button type="button" class="rank-btn" data-action="toggle-seat" data-seat="${seat}" data-fid="${k}:remove:${seat}" aria-label="${seat}번 빼기">✕</button></li>`).join('')}</ol>`;
+  }
 
-      // 선택 순위 요약
-      const summary = document.createElement('div');
-      summary.className = 'seat-preference-summary';
-      if (selected.length === 0) {
-        summary.innerHTML = '<span class="seat-empty">좌석을 클릭해 우선순위를 지정하세요</span>';
-      } else {
-        selected.forEach((seatNo, idx) => {
-          const badge = document.createElement('button');
-          badge.type = 'button';
-          badge.className = 'seat-priority';
-          badge.innerHTML = `${idx + 1}순위 <b>${seatNo}번</b> <span class="seat-priority-clear">×</span>`;
-          badge.title = '클릭하면 해제';
-          badge.setAttribute('aria-label', `${idx + 1}순위 ${seatNo}번 좌석 선택 해제`);
-          badge.onclick = () => { selected.splice(idx, 1); render(); markDirty(); refreshPreview(ti); };
-          summary.appendChild(badge);
-        });
+  function seatMapHtml(t) {
+    const k = t._key;
+    const seats = t.seatPreference.preferredSeats.map(Number);
+    let rows = '';
+    for (let row = 0; row < 11; row += 1) {
+      rows += '<div class="seat-row">';
+      for (const col of [1, 2, 0, 3, 4]) {
+        if (!col) { rows += '<span aria-hidden="true"></span>'; continue; }
+        const seat = row * 4 + col;
+        const rank = seats.indexOf(seat) + 1;
+        rows += `<button type="button" class="seat" data-action="toggle-seat" data-seat="${seat}" data-fid="${k}:seat:${seat}" aria-pressed="${rank > 0}" aria-label="${seat}번 좌석${rank ? `, ${rank}순위` : ''}">${seat}${rank ? `<span class="rank" aria-hidden="true">${rank}</span>` : ''}</button>`;
       }
-      wrapper.appendChild(summary);
-
-      const colLabels = document.createElement('div');
-      colLabels.className = 'seat-map-labels';
-      colLabels.innerHTML = `
-        <div>운전석</div><div></div><div></div><div></div><div>출입문</div>
-      `;
-      wrapper.appendChild(colLabels);
-
-      const bus = document.createElement('div');
-      bus.className = 'seat-map-bus';
-
-      for (let rowNo = 1; rowNo <= 11; rowNo++) {
-        const row = document.createElement('div');
-        row.className = 'seat-map-row';
-
-        [1, 2, null, 3, 4].forEach(colNo => {
-          if (colNo === null) {
-            const aisle = document.createElement('div');
-            aisle.className = 'seat-aisle';
-            row.appendChild(aisle);
-            return;
-          }
-
-          const seatNo = (rowNo - 1) * 4 + colNo;
-          const btn = document.createElement('button');
-          btn.className = 'seat-btn';
-          btn.type = 'button';
-
-          const priority = selected.indexOf(seatNo);
-          if (priority !== -1) {
-            btn.classList.add('selected');
-            btn.textContent = priority + 1;
-          } else {
-            btn.textContent = seatNo;
-          }
-
-          btn.onclick = () => {
-            const idx = selected.indexOf(seatNo);
-            if (idx !== -1) {
-              selected.splice(idx, 1);
-            } else if (selected.length < 5) {
-              selected.push(seatNo);
-            }
-            render();
-            markDirty();
-            refreshPreview(ti);
-          };
-
-          row.appendChild(btn);
-        });
-
-        bus.appendChild(row);
-      }
-
-      wrapper.appendChild(bus);
-
-      const legend = document.createElement('div');
-      legend.className = 'seat-map-legend';
-      legend.textContent = `좌석 클릭 → 순위 추가 (최대 5석) · 뱃지 클릭 → 해제 · 현재 ${selected.length}/5석 선택됨`;
-      wrapper.appendChild(legend);
+      rows += '</div>';
     }
-
-    render();
-    wrapper._getPreferredSeats = () => [...selected];
+    return `<div class="bus"><div class="bus-front" aria-hidden="true"><span>운전석</span><span>앞</span><span>출입문</span></div><div class="seats" role="group" aria-label="좌석 배치">${rows}</div></div>`;
   }
 
-  function appendTargetCard(ti, target) {
-    const container = document.getElementById('targets-container');
-    const card = document.createElement('article');
-    card.className = 'target-surface';
-    card.id = `target-card-${ti}`;
-    card.innerHTML = `
-      <div class="target-content">
-      <div class="target-heading">
-        <span class="target-index">예약 대상 ${ti + 1}</span>
-        <button class="btn-icon" onclick="removeTarget(${ti})" aria-label="예약 대상 삭제" title="예약 대상 삭제">×</button>
-      </div>
-      <input type="text" class="name-input" id="name-input-${ti}"
-        value="${escHtml(target.name)}" placeholder="예약 이름" oninput="onSettingsChange(${ti})" />
-      <div class="target-main">
-      <div class="route-editor">
-        <p class="section-label">노선</p>
-        <div class="route-summary" id="bus-info-${ti}">${busInfoHtml(ti)}</div>
-        <div class="route-actions"><button class="btn btn-secondary btn-small" onclick="toggleBusSelector(${ti})">노선 변경</button></div>
-
-        <div class="bus-selector" id="bus-selector-${ti}" style="display:none">
-          <p class="section-label">노선 검색</p>
-          <input type="text" class="search-input" id="line-search-${ti}"
-            placeholder="노선 번호 또는 이름"
-            oninput="onLineSearch(${ti})" autocomplete="off" />
-          <div class="search-results" id="line-results-${ti}"></div>
-
-          <div id="turn-section-${ti}" style="display:none">
-            <p class="section-label">출발 시간</p>
-            <select class="select-input" id="turn-select-${ti}" onchange="onTurnChange(${ti})">
-              <option value="">출발 시간 선택</option>
-            </select>
-          </div>
-
-          <div id="on-station-section-${ti}" style="display:none">
-            <p class="section-label">승차 정류장</p>
-            <input type="text" class="search-input" id="on-search-${ti}"
-              placeholder="정류장 이름 검색"
-              oninput="onOnSearch(${ti})" onfocus="onOnSearch(${ti})" autocomplete="off" />
-            <div class="search-results" id="on-results-${ti}"></div>
-          </div>
-
-          <div id="off-station-section-${ti}" style="display:none">
-            <p class="section-label">하차 정류장</p>
-            <input type="text" class="search-input" id="off-search-${ti}"
-              placeholder="정류장 이름 검색"
-              oninput="onOffSearch(${ti})" onfocus="onOffSearch(${ti})" autocomplete="off" />
-            <div class="search-results" id="off-results-${ti}"></div>
-          </div>
-        </div>
-      </div>
-      <div class="settings-grid">
-        <div>
-          <div class="settings-block" id="auto-settings-${ti}">
-            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="auto-book-toggle" id="autoBookEnabled-${ti}" ${target.autoBookEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />자동예약 사용</label></div>
-            <div id="auto-options-${ti}"><label class="toggle-row"><input type="checkbox" id="everyday-${ti}" ${target.weekdays?.length === 7 ? 'checked' : ''} onchange="toggleEveryday(${ti})" />매일</label><p class="section-label">자동 예약 요일</p><div class="weekday-grid" id="weekdays-${ti}"></div></div>
-          </div>
-          <div class="settings-block" id="monitor-settings-${ti}">
-            <div class="control-row"><label class="toggle-row"><input type="checkbox" class="monitor-toggle" id="monitorEnabled-${ti}" ${target.monitorEnabled ? 'checked' : ''} onchange="onSettingsChange(${ti})" />빈자리 예약 사용</label></div>
-            <div id="monitor-options-${ti}"><div class="control-row"><p class="section-label">모니터링 날짜</p><button class="btn btn-secondary btn-small" type="button" onclick="cleanPastDates(${ti})">지난 날짜 정리</button></div><div class="date-list" id="dates-${ti}"></div><div class="date-add-row"><input type="date" id="dateInput-${ti}" min="${todayKSTDate()}" /><button class="btn btn-secondary btn-small" onclick="addDate(${ti})">날짜 추가</button></div></div>
-          </div>
-        </div>
-        <div class="settings-block"><p class="section-label">선호 좌석</p><div class="seat-map-wrapper" id="seat-map-${ti}"></div><p class="section-label" style="margin-top:20px">선호 좌석이 없을 때</p><select class="fallback-select" id="fallback-${ti}" onchange="onSettingsChange(${ti})"><option value="any" ${target.seatPreference?.fallbackMode !== 'preferredOnly' ? 'selected' : ''}>남은 좌석 중 예약</option><option value="preferredOnly" ${target.seatPreference?.fallbackMode === 'preferredOnly' ? 'selected' : ''}>예약하지 않음</option></select></div>
-      </div>
-      <pre class="config-preview" id="preview-${ti}"></pre>
-      </div>
-      </div>
-    `;
-    container.appendChild(card);
-
-    const wdGrid = document.getElementById(`weekdays-${ti}`);
-    DAYS.forEach(({ code, label }) => {
-      const btn = document.createElement('button');
-      btn.className = 'weekday-btn' + (target.weekdays?.includes(code) ? ' active' : '');
-      btn.textContent = label;
-      btn.dataset.code = code;
-      btn.onclick = () => { btn.classList.toggle('active'); onSettingsChange(ti); };
-      wdGrid.appendChild(btn);
-    });
-
-    buildSeatMap(ti, target.seatPreference?.preferredSeats || []);
-
-    renderDates(ti, target.monitorDates || []);
-    updateControlStates(ti);
-    refreshPreview(ti);
-  }
-
-  function toggleEveryday(ti) {
-    const checked = document.getElementById(`everyday-${ti}`).checked;
-    document.querySelectorAll(`#weekdays-${ti} .weekday-btn`).forEach(btn => {
-      btn.classList.toggle('active', checked);
-    });
-    onSettingsChange(ti);
-  }
-
-  function updateControlStates(ti) {
-    const autoEnabled = document.getElementById(`autoBookEnabled-${ti}`)?.checked;
-    const monitorEnabled = document.getElementById(`monitorEnabled-${ti}`)?.checked;
-    document.getElementById(`auto-options-${ti}`)?.classList.toggle('settings-disabled', !autoEnabled);
-    document.getElementById(`monitor-options-${ti}`)?.classList.toggle('settings-disabled', !monitorEnabled);
-  }
-
-  function onSettingsChange(ti) {
-    markDirty();
-    updateControlStates(ti);
-    refreshPreview(ti);
-  }
-
-  function refreshPreview(ti) {
-    const card = document.getElementById(`target-card-${ti}`);
-    const preview = document.getElementById(`preview-${ti}`);
-    if (!card || !preview) return;
-    preview.textContent = ConfigUtils.buildPreview(collectTarget(ti, card), todayKSTDate());
-  }
-
-  function toggleBusSelector(ti) {
-    const sel = document.getElementById(`bus-selector-${ti}`);
-    const open = sel.style.display === 'none';
-    sel.style.display = open ? 'block' : 'none';
-    if (open) {
-      document.getElementById(`line-search-${ti}`).value = '';
-      document.getElementById(`line-results-${ti}`).innerHTML = '';
-      document.getElementById(`turn-section-${ti}`).style.display = 'none';
-      document.getElementById(`on-station-section-${ti}`).style.display = 'none';
-      document.getElementById(`off-station-section-${ti}`).style.display = 'none';
-      document.getElementById(`line-search-${ti}`).focus();
+  function renderSaveBar() {
+    const bar = $('save-bar');
+    const btn = $('save-btn');
+    const changes = changeCount();
+    const invalid = state.showErrors ? validations().filter((v) => !v.valid) : [];
+    const invalidFields = invalid.reduce((n, v) => n + Object.keys(v.fields).length, 0);
+    let tone = 'clean';
+    let text = '';
+    let button = { label: '저장', action: 'save', kind: 'primary', disabled: false };
+    if (!state.loaded) {
+      tone = state.loadError ? 'error' : 'idle';
+      text = state.loadError ? '설정을 불러오지 못했어요' : '불러오는 중…';
+      button = state.loadError ? { label: '다시 시도', action: 'reload-force', kind: 'secondary' } : { ...button, disabled: true };
+    } else if (state.saving) {
+      tone = 'idle';
+      text = '저장 중…';
+      button.disabled = true;
+    } else if (state.conflict) {
+      tone = 'error';
+      text = '다른 기기에서 먼저 저장했어요';
+      button = { label: '최신 설정 불러오기', action: 'reload', kind: 'secondary' };
+    } else if (invalidFields) {
+      tone = 'error';
+      text = `저장 전에 고칠 곳 ${invalidFields}곳`;
+      button = { label: '이동', action: 'jump-error', kind: 'secondary' };
+    } else if (state.saveError) {
+      tone = 'error';
+      text = `저장하지 못했어요 · ${state.saveError}`;
+      button.label = '다시 시도';
+    } else if (changes) {
+      tone = 'dirty';
+      text = `저장하지 않은 변경 ${changes}개`;
+    } else if (state.flash) {
+      tone = 'saved';
+      text = state.flash;
+      button.disabled = true;
+    } else {
+      text = state.savedAt ? `변경 없음 · 마지막 저장 ${whenLabel(Date.parse(state.savedAt))}` : '변경 없음';
+      button.disabled = true;
     }
+    bar.dataset.tone = tone;
+    $('save-text').textContent = text;
+    btn.textContent = button.label;
+    btn.dataset.action = button.action;
+    btn.className = `btn btn-${button.kind}`;
+    btn.disabled = !!button.disabled;
   }
 
-  function onLineSearch(ti) {
-    const q = document.getElementById(`line-search-${ti}`).value.trim().toLowerCase();
-    const results = document.getElementById(`line-results-${ti}`);
-    if (!q) { results.innerHTML = ''; return; }
-
-    const matches = lineData
-      .filter(l => l.no.toLowerCase().includes(q) || l.name.toLowerCase().includes(q))
-      .slice(0, 8);
-
-    results.innerHTML = '';
-    if (!matches.length) {
-      results.innerHTML = '<div class="result-empty">검색 결과 없음</div>';
-      return;
+  // ───────── 불러오기 · 저장 ─────────
+  async function load() {
+    state.loaded = false;
+    state.loadError = null;
+    renderAll();
+    try {
+      const [configRes, lineRes, statusRes] = await Promise.all([
+        fetch('api/config', { cache: 'no-store' }),
+        fetch('line.json').catch(() => null),
+        fetch('api/status', { cache: 'no-store' }).catch(() => null),
+      ]);
+      if (!configRes.ok) throw new Error(await responseError(configRes));
+      const data = await configRes.json();
+      if (lineRes?.ok) indexLines((await lineRes.json()).data || []);
+      if (statusRes?.ok) state.status = await statusRes.json();
+      const { targets = [], ...extra } = data.config;
+      state.extra = extra;
+      state.version = data.version;
+      state.savedAt = data.savedAt || null;
+      state.targets = targets.filter(Boolean).map((t) => ({ ...U.normalizeUiTarget(t), _key: newKey() }));
+      state.base = structuredClone(state.targets);
+      state.expanded = new Set(state.targets.length === 1 ? [state.targets[0]._key] : []);
+      Object.assign(state, { showErrors: false, saveError: null, conflict: false, flash: null, undo: null, seatHint: null, loaded: true });
+      hideSnackbar();
+    } catch (err) {
+      state.loadError = err.message;
     }
-    matches.forEach(line => {
-      const item = document.createElement('div');
-      item.className = 'result-item';
-      item.textContent = `${line.no}  ${line.name}`;
-      item.onclick = () => selectLine(ti, line);
-      results.appendChild(item);
-    });
+    renderAll();
   }
 
-  function selectLine(ti, line) {
-    document.getElementById(`line-search-${ti}`).value = `${line.no}  ${line.name}`;
-    document.getElementById(`line-results-${ti}`).innerHTML = '';
-    cardState[ti].lineTurnUid = null;
-    cardState[ti].onStationUid = null;
-    cardState[ti].offStationUid = null;
-
-    const bookableTurnUids = new Set(line.fares.map(f => f.lineTurnUid));
-    const turns = line.turns.filter(t => t.useYn && t.bookYn && bookableTurnUids.has(t.uid));
-
-    const turnSel = document.getElementById(`turn-select-${ti}`);
-    turnSel.innerHTML = '<option value="">출발 시간 선택</option>';
-    turns.forEach(turn => {
-      const opt = document.createElement('option');
-      opt.value = turn.uid;
-      opt.textContent = `${turn.beginStation?.departureTime || ''} 출발`;
-      turnSel.appendChild(opt);
-    });
-
-    document.getElementById(`turn-section-${ti}`).style.display = 'block';
-    document.getElementById(`on-station-section-${ti}`).style.display = 'none';
-    document.getElementById(`off-station-section-${ti}`).style.display = 'none';
-  }
-
-  function onTurnChange(ti) {
-    const turnUid = document.getElementById(`turn-select-${ti}`).value;
-    if (!turnUid) return;
-    cardState[ti].lineTurnUid = turnUid;
-    cardState[ti].onStationUid = null;
-    cardState[ti].offStationUid = null;
-    cardState[ti].selectedTurnStations = turnMap[turnUid]?.stations || [];
-
-    document.getElementById(`on-station-section-${ti}`).style.display = 'block';
-    document.getElementById(`on-search-${ti}`).value = '';
-    document.getElementById(`on-results-${ti}`).innerHTML = '';
-    document.getElementById(`off-station-section-${ti}`).style.display = 'none';
-  }
-
-  function onOnSearch(ti) {
-    const q = document.getElementById(`on-search-${ti}`).value.trim().toLowerCase();
-    const results = document.getElementById(`on-results-${ti}`);
-    const stations = (cardState[ti].selectedTurnStations || []).filter(s => s.onYn);
-    const matches = (q ? stations.filter(s => s.name.toLowerCase().includes(q)) : stations).slice(0, 8);
-
-    results.innerHTML = '';
-    if (!matches.length) {
-      results.innerHTML = `<div class="result-empty">${q ? '검색 결과 없음' : '정류장 없음'}</div>`;
-      return;
-    }
-    matches.forEach(s => {
-      const item = document.createElement('div');
-      item.className = 'result-item';
-      item.textContent = s.name;
-      item.onclick = () => selectOnStation(ti, s);
-      results.appendChild(item);
-    });
-  }
-
-  function selectOnStation(ti, station) {
-    document.getElementById(`on-search-${ti}`).value = station.name;
-    document.getElementById(`on-results-${ti}`).innerHTML = '';
-    cardState[ti].onStationUid = station.uid;
-    cardState[ti].offStationUid = null;
-
-    const allStations = cardState[ti].selectedTurnStations || [];
-    const onIdx = allStations.findIndex(s => s.uid === station.uid);
-    cardState[ti].offCandidates = allStations.slice(onIdx + 1).filter(s => s.offYn);
-
-    document.getElementById(`off-station-section-${ti}`).style.display = 'block';
-    document.getElementById(`off-search-${ti}`).value = '';
-    document.getElementById(`off-results-${ti}`).innerHTML = '';
-  }
-
-  function onOffSearch(ti) {
-    const q = document.getElementById(`off-search-${ti}`).value.trim().toLowerCase();
-    const results = document.getElementById(`off-results-${ti}`);
-    const candidates = cardState[ti].offCandidates || [];
-    const matches = (q ? candidates.filter(s => s.name.toLowerCase().includes(q)) : candidates).slice(0, 8);
-
-    results.innerHTML = '';
-    if (!matches.length) {
-      results.innerHTML = `<div class="result-empty">${q ? '검색 결과 없음' : '하차 정류장 없음'}</div>`;
-      return;
-    }
-    matches.forEach(s => {
-      const item = document.createElement('div');
-      item.className = 'result-item';
-      item.textContent = s.name;
-      item.onclick = () => selectOffStation(ti, s);
-      results.appendChild(item);
-    });
-  }
-
-  function selectOffStation(ti, station) {
-    document.getElementById(`off-search-${ti}`).value = station.name;
-    document.getElementById(`off-results-${ti}`).innerHTML = '';
-    cardState[ti].offStationUid = station.uid;
-
-    const info = turnMap[cardState[ti].lineTurnUid];
-    if (info) {
-      const nameInput = document.getElementById(`name-input-${ti}`);
-      if (!nameInput.value.trim()) {
-        nameInput.value = `[${info.lineNo}] ${info.departureTime} 버스`;
-      }
-    }
-
-    document.getElementById(`bus-info-${ti}`).innerHTML = busInfoHtml(ti);
-    document.getElementById(`bus-selector-${ti}`).style.display = 'none';
-    onSettingsChange(ti);
-  }
-
-  function addTarget() {
-    const ti = configData.targets.length;
-    const newTarget = {
-      name: '', lineTurnUid: '', onStationUid: '', offStationUid: '',
-      autoBookEnabled: false, monitorEnabled: false,
-      weekdays: [], monitorDates: [],
-      seatPreference: { preferredSeats: [], fallbackMode: 'any' },
-    };
-    configData.targets.push(newTarget);
-    cardState[ti] = { lineTurnUid: '', onStationUid: '', offStationUid: '' };
-    appendTargetCard(ti, newTarget);
-    document.getElementById(`bus-selector-${ti}`).style.display = 'block';
-    document.getElementById(`line-search-${ti}`).focus();
-    document.getElementById(`target-card-${ti}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    markDirty();
-  }
-
-  function removeTarget(ti) {
-    document.getElementById(`target-card-${ti}`)?.remove();
-    configData.targets[ti] = null;
-    markDirty();
-  }
-
-  function renderDates(ti, dates) {
-    const list = document.getElementById(`dates-${ti}`);
-    list.innerHTML = '';
-    dates.forEach((d, di) => {
-      const item = document.createElement('div');
-      item.className = 'date-item';
-      item.innerHTML = `<span>${d}</span><button class="date-remove" onclick="removeDate(${ti}, ${di})" aria-label="${d} 삭제">×</button>`;
-      list.appendChild(item);
-    });
-  }
-
-  function addDate(ti) {
-    const input = document.getElementById(`dateInput-${ti}`);
-    const val = input.value;
-    if (!val || !configData.targets[ti]) return;
-    const target = configData.targets[ti];
-    if (!target.monitorDates) target.monitorDates = [];
-    if (!target.monitorDates.includes(val)) { target.monitorDates.push(val); target.monitorDates.sort(); }
-    input.value = '';
-    renderDates(ti, target.monitorDates);
-    onSettingsChange(ti);
-  }
-
-  function removeDate(ti, di) {
-    const target = configData.targets[ti];
-    if (!target) return;
-    target.monitorDates.splice(di, 1);
-    renderDates(ti, target.monitorDates);
-    onSettingsChange(ti);
-  }
-
-  function cleanPastDates(ti) {
-    const target = configData.targets[ti];
-    if (!target) return;
-    target.monitorDates = ConfigUtils.removePastMonitorDates(target.monitorDates, todayKSTDate());
-    renderDates(ti, target.monitorDates);
-    onSettingsChange(ti);
-  }
-
-  function collectTarget(ti, card) {
-    const s = cardState[ti] || {};
-    return {
-      name: document.getElementById(`name-input-${ti}`)?.value || '',
-      lineTurnUid: s.lineTurnUid || '',
-      onStationUid: s.onStationUid || '',
-      offStationUid: s.offStationUid || '',
-      autoBookEnabled: document.getElementById(`autoBookEnabled-${ti}`)?.checked || false,
-      monitorEnabled: document.getElementById(`monitorEnabled-${ti}`)?.checked || false,
-      weekdays: Array.from(card.querySelectorAll('.weekday-btn.active')).map(b => b.dataset.code),
-      monitorDates: configData.targets[ti]?.monitorDates || [],
-      seatPreference: {
-        preferredSeats: document.getElementById(`seat-map-${ti}`)._getPreferredSeats?.() || [],
-        fallbackMode: document.getElementById(`fallback-${ti}`)?.value || 'any',
-      },
-    };
+  async function refreshStatus() {
+    try {
+      const res = await fetch('api/status', { cache: 'no-store' });
+      if (!res.ok) return;
+      state.status = await res.json();
+      renderLive();
+      if (state.loaded) renderUpcoming();
+    } catch { /* 다음 주기에 다시 시도한다 */ }
   }
 
   function collectConfig() {
-    const cards = Array.from(
-      document.getElementById('targets-container').querySelectorAll('.target-surface[id^="target-card-"]')
-    ).sort((a, b) =>
-      parseInt(a.id.replace('target-card-', '')) - parseInt(b.id.replace('target-card-', ''))
-    );
-
-    const targets = cards.map(card => {
-      const ti = parseInt(card.id.replace('target-card-', ''));
-      return collectTarget(ti, card);
-    });
-    return { ...configData, targets };
+    return { ...state.extra, targets: state.targets.map(({ _key, ...target }) => target) };
   }
 
-  function validateConfigForSave() {
-    const config = collectConfig();
-    const errors = config.targets
-      .map((target, index) => ({ index, ...ConfigUtils.validateUiTarget(target, todayKSTDate()) }))
-      .filter(result => !result.valid);
-    if (!errors.length) return { valid: true, errors: [], config };
-    const first = errors[0];
-    const cards = document.getElementById('targets-container').querySelectorAll('.target-surface[id^="target-card-"]');
-    cards[first.index]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setStatus(`예약 대상 ${first.index + 1}: ${first.errors.join(' ')}`, 'err');
-    return { valid: false, errors, config };
-  }
-
-  async function saveConfig() {
-    const validation = validateConfigForSave();
-    if (!validation.valid) return;
-    const nextConfig = validation.config;
-    setStatus('저장 중...');
+  async function save() {
+    state.showErrors = true;
+    if (validations().some((v) => !v.valid)) {
+      renderTargets();
+      renderSaveBar();
+      jumpToError();
+      return;
+    }
+    state.saving = true;
+    state.saveError = null;
+    renderSaveBar();
     try {
       const res = await fetch('api/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config: nextConfig, version: configVersion }),
+        body: JSON.stringify({ config: collectConfig(), version: state.version }),
       });
       if (res.status === 409) {
-        setStatus('다른 곳에서 설정이 변경되었습니다. 최신 설정을 다시 불러와주세요.', 'err');
-        document.getElementById('reload-conflict').style.display = 'flex';
+        state.conflict = true;
         return;
       }
       if (!res.ok) throw new Error(await responseError(res));
       const data = await res.json();
-      configVersion = data.version;
-      configData = nextConfig;
-      isDirty = false;
-      document.getElementById('reload-conflict').style.display = 'none';
-      renderConfig();
-      setStatus('저장 완료! 다음 실행부터 자동 반영됩니다.', 'ok');
+      state.version = data.version;
+      state.savedAt = data.savedAt || new Date().toISOString();
+      state.base = structuredClone(state.targets);
+      state.showErrors = false;
+      state.flash = `${hhmm(Date.now())} 저장됨 · 5분 안에 적용돼요`;
+      hideSnackbar();
     } catch (err) {
-      setStatus(`저장 오류: ${err.message}`, 'err');
+      state.saveError = err.message;
+    } finally {
+      state.saving = false;
+      renderUpcoming();
+      renderTargets();
+      renderSaveBar();
     }
   }
+
+  function jumpToError() {
+    const first = validations().find((v) => !v.valid);
+    if (!first) return;
+    if (!state.expanded.has(first.key)) {
+      state.expanded.add(first.key);
+      renderCard(first.key);
+    }
+    const card = document.querySelector(`[data-key="${first.key}"]`);
+    const field = ['name', 'route', 'weekdays', 'monitorDates'].find((f) => first.fields[f]);
+    const area = card?.querySelector(`[data-error-for="${field}"]`) || card;
+    if (!area) return;
+    area.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    const focusable = area.matches('input, button') ? area : area.querySelector('input:not([type="checkbox"]), .notice button, .day-btn, .date-btn:not(:disabled), button');
+    focusable?.focus({ preventScroll: true });
+  }
+
+  function requestReload() {
+    const changes = changeCount();
+    if (!changes) return load();
+    $('confirm-text').textContent = `바꾼 내용 ${changes}개가 사라져요. 남기려면 “계속 편집”을 누른 뒤 먼저 저장하세요.`;
+    $('confirm-sheet').showModal();
+  }
+
+  // ───────── 편집 ─────────
+  function changed(key, { card = true } = {}) {
+    state.flash = null;
+    state.saveError = null;
+    if (card && key) renderCard(key);
+    renderUpcoming();
+    renderSaveBar();
+  }
+
+  function addTarget() {
+    const target = {
+      ...U.normalizeUiTarget({
+        name: '', lineTurnUid: '', onStationUid: '', offStationUid: '',
+        autoBookEnabled: false, monitorEnabled: false, weekdays: [], monitorDates: [],
+        seatPreference: { preferredSeats: [], fallbackMode: 'any' },
+      }),
+      _key: newKey(),
+    };
+    state.targets.push(target);
+    state.expanded.add(target._key);
+    renderTargets();
+    changed(null);
+    document.querySelector(`[data-key="${target._key}"]`)?.scrollIntoView({ block: 'start' });
+    openRoute(target._key);
+  }
+
+  function deleteTarget(key) {
+    const index = state.targets.findIndex((t) => t._key === key);
+    if (index < 0) return;
+    const [removed] = state.targets.splice(index, 1);
+    state.undo = { target: removed, index, open: state.expanded.has(key) };
+    state.expanded.delete(key);
+    renderTargets();
+    changed(null);
+    showSnackbar(`‘${targetName(removed)}’ 삭제됨 · 저장 전까지 되돌릴 수 있어요`);
+  }
+
+  function undoDelete() {
+    const undo = state.undo;
+    if (!undo) return;
+    state.targets.splice(Math.min(undo.index, state.targets.length), 0, undo.target);
+    if (undo.open) state.expanded.add(undo.target._key);
+    state.undo = null;
+    hideSnackbar();
+    renderTargets();
+    changed(null);
+    document.querySelector(`[data-key="${undo.target._key}"] .target-toggle`)?.focus();
+  }
+
+  function showSnackbar(text) {
+    $('snack-text').textContent = text;
+    $('snackbar').hidden = false;
+    clearTimeout(snackTimer);
+    snackTimer = setTimeout(hideSnackbar, 8000);
+  }
+
+  function hideSnackbar() {
+    clearTimeout(snackTimer);
+    $('snackbar').hidden = true;
+  }
+
+  function toggleSeat(t, seat) {
+    const seats = t.seatPreference.preferredSeats.map(Number);
+    const at = seats.indexOf(seat);
+    state.seatHint = null;
+    if (at >= 0) seats.splice(at, 1);
+    else if (seats.length < MAX_SEATS) seats.push(seat);
+    else {
+      state.seatHint = t._key;
+      renderCard(t._key);
+      return false;
+    }
+    t.seatPreference.preferredSeats = seats;
+    return true;
+  }
+
+  function moveSeat(t, seat, delta) {
+    const seats = t.seatPreference.preferredSeats.map(Number);
+    const from = seats.indexOf(seat);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= seats.length) return;
+    [seats[from], seats[to]] = [seats[to], seats[from]];
+    t.seatPreference.preferredSeats = seats;
+  }
+
+  // ───────── 노선 시트: 고르는 동안은 초안에만 담고 “적용”할 때만 대상에 반영한다 ─────────
+  function openRoute(key) {
+    const t = findTarget(key);
+    if (!t) return;
+    const info = state.turns.get(t.lineTurnUid);
+    state.route = {
+      key,
+      step: 1,
+      query: info ? info.line.no : '',
+      lineIdx: info ? state.lines.indexOf(info.line) : -1,
+      turnUid: info ? t.lineTurnUid : null,
+      onUid: info ? t.onStationUid || null : null,
+      offUid: info ? t.offStationUid || null : null,
+    };
+    renderRoute();
+    $('route-sheet').showModal();
+    $('route-body').querySelector('input')?.focus();
+  }
+
+  function closeRoute() {
+    const key = state.route?.key;
+    state.route = null;
+    if ($('route-sheet').open) $('route-sheet').close();
+    document.querySelector(`[data-key="${key}"] [data-action="open-route"]`)?.focus({ preventScroll: true });
+  }
+
+  const routeLineOf = (r) => state.lines[r.lineIdx] || null;
+  const routeTurnOf = (r) => state.turns.get(r.turnUid)?.turn || null;
+
+  function routeStepDone(r, n) {
+    return [r.lineIdx >= 0, !!r.turnUid, !!r.onUid, !!r.offUid][n - 1];
+  }
+
+  function renderRoute() {
+    const r = state.route;
+    if (!r) return;
+    const line = routeLineOf(r);
+    const turn = routeTurnOf(r);
+    const values = [line?.no, departure(turn) && `${departure(turn)} 출발`, stationOf(turn, r.onUid)?.name, stationOf(turn, r.offUid)?.name];
+    $('route-steps').innerHTML = ROUTE_STEPS.map((label, i) => {
+      const n = i + 1;
+      const done = routeStepDone(r, n);
+      const reachable = n === 1 || routeStepDone(r, n - 1);
+      return `<li><button type="button" data-action="route-step" data-step="${n}" class="${done ? 'is-done' : ''}"${r.step === n ? ' aria-current="step"' : ''}${reachable ? '' : ' disabled'}>${done ? `✓ ${esc(values[i])}` : `${n} ${label}`}</button></li>`;
+    }).join('');
+    $('route-body').innerHTML = routeBodyHtml(r, line, turn);
+    const complete = ROUTE_STEPS.every((_, i) => routeStepDone(r, i + 1));
+    $('route-foot').innerHTML = `<button type="button" class="btn btn-secondary" data-action="route-back"${r.step === 1 ? ' disabled' : ''}>이전</button>`
+      + `<button type="button" class="btn btn-primary" data-action="route-apply"${complete ? '' : ' disabled'}>적용</button>`;
+  }
+
+  function routeBodyHtml(r, line, turn) {
+    const note = '<p class="sheet-note">적용하기 전까지는 지금 노선이 그대로 유지돼요.</p>';
+    if (!state.lines.length) return '<p>노선 데이터를 불러오지 못했어요. 새로고침한 뒤 다시 시도해 주세요.</p>';
+    if (r.step === 1) {
+      return `<input type="search" class="search-input" data-input="route-query" value="${esc(r.query)}" placeholder="노선 번호나 지역 (예: M4434, 화성)" aria-label="노선 검색" autocomplete="off" enterkeyhint="search">
+        <div id="route-results">${routeResultsHtml(r)}</div>${note}`;
+    }
+    if (r.step === 2) {
+      const turns = bookableTurns(line);
+      if (!turns.length) return `<p>이 노선에는 지금 예약할 수 있는 운행이 없어요.</p>${note}`;
+      return `<ul class="options">${turns.map((tn) => `<li><button type="button" class="option" data-action="route-turn" data-uid="${esc(tn.uid)}" aria-pressed="${tn.uid === r.turnUid}"><time>${esc(departure(tn))}</time><span>${esc(tn.stations?.[0]?.name || '')} → ${esc(tn.stations?.at(-1)?.name || '')}</span></button></li>`).join('')}</ul>${note}`;
+    }
+    const stations = turn?.stations || [];
+    if (r.step === 3) {
+      const ons = stations.filter((s) => s.onYn);
+      return `<ul class="options">${ons.map((s) => `<li><button type="button" class="option" data-action="route-on" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.onUid}"><time>${esc(stationTime(s, 'on'))}</time><span>${esc(s.name)}</span></button></li>`).join('')}</ul>${note}`;
+    }
+    const onIdx = stations.findIndex((s) => s.uid === r.onUid);
+    const offs = stations.slice(onIdx + 1).filter((s) => s.offYn);
+    if (!offs.length) return `<p>이 정류장 뒤로 내릴 수 있는 정류장이 없어요. 승차 정류장을 다시 골라 주세요.</p>${note}`;
+    return `<ul class="options">${offs.map((s) => `<li><button type="button" class="option" data-action="route-off" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.offUid}"><time>${esc(stationTime(s, 'off'))}</time><span>${esc(s.name)}</span></button></li>`).join('')}</ul>${note}`;
+  }
+
+  function routeResultsHtml(r) {
+    const q = r.query.trim().toLowerCase();
+    if (!q) return '<p class="sheet-note">노선 번호나 지역 이름을 입력하세요.</p>';
+    const matches = state.lines
+      .map((line, idx) => ({ line, idx }))
+      .filter(({ line }) => line.no.toLowerCase().includes(q) || line.name.toLowerCase().includes(q));
+    if (!matches.length) return '<p class="sheet-note">검색 결과가 없어요.</p>';
+    const shown = matches.slice(0, 8);
+    return `<ul class="options">${shown.map(({ line, idx }) => `<li><button type="button" class="option no-time" data-action="route-line" data-idx="${idx}" aria-pressed="${idx === r.lineIdx}"><b>${esc(line.no)}</b><small>${esc(U.formatLineName(line.name))}</small></button></li>`).join('')}</ul>`
+      + (matches.length > shown.length ? `<p class="sheet-note">${matches.length}개 중 ${shown.length}개 · 더 입력해서 좁혀 보세요</p>` : '');
+  }
+
+  function applyRoute() {
+    const r = state.route;
+    const t = r && findTarget(r.key);
+    if (!t || !ROUTE_STEPS.every((_, i) => routeStepDone(r, i + 1))) return;
+    const line = routeLineOf(r);
+    t.lineTurnUid = r.turnUid;
+    t.onStationUid = r.onUid;
+    t.offStationUid = r.offUid;
+    if (!t.name.trim()) t.name = `[${line.no}] ${departure(routeTurnOf(r))} 버스`;
+    const key = r.key;
+    closeRoute();
+    changed(key);
+  }
+
+  // ───────── 이벤트 ─────────
+  document.addEventListener('click', (event) => {
+    const btn = event.target.closest('[data-action]');
+    if (!btn || btn.disabled) return;
+    const key = btn.closest('[data-key]')?.dataset.key;
+    const t = key ? findTarget(key) : null;
+    const r = state.route;
+    const seat = Number(btn.dataset.seat);
+    switch (btn.dataset.action) {
+      case 'toggle-card':
+        if (state.expanded.has(key)) state.expanded.delete(key); else state.expanded.add(key);
+        renderCard(key);
+        break;
+      case 'delete-target': deleteTarget(key); break;
+      case 'undo': undoDelete(); break;
+      case 'add-target': addTarget(); break;
+      case 'open-route': openRoute(key); break;
+      case 'toggle-day': {
+        const days = new Set(t.weekdays);
+        if (days.has(btn.dataset.day)) days.delete(btn.dataset.day); else days.add(btn.dataset.day);
+        t.weekdays = DAYS.map(([code]) => code).filter((code) => days.has(code));
+        changed(key);
+        break;
+      }
+      case 'quick-days':
+        t.weekdays = { weekdays: WEEKDAY_CODES, everyday: DAYS.map(([code]) => code), none: [] }[btn.dataset.set];
+        changed(key);
+        break;
+      case 'toggle-date': {
+        const dates = new Set(t.monitorDates);
+        if (dates.has(btn.dataset.date)) dates.delete(btn.dataset.date); else dates.add(btn.dataset.date);
+        t.monitorDates = [...dates].sort();
+        changed(key);
+        break;
+      }
+      case 'remove-date':
+        t.monitorDates = t.monitorDates.filter((d) => d !== btn.dataset.date);
+        changed(key);
+        break;
+      case 'clean-past':
+        t.monitorDates = U.removePastMonitorDates(t.monitorDates, today());
+        changed(key);
+        break;
+      case 'toggle-seat': if (toggleSeat(t, seat)) changed(key); break;
+      case 'seat-up': moveSeat(t, seat, -1); changed(key); break;
+      case 'seat-down': moveSeat(t, seat, 1); changed(key); break;
+      case 'save': save(); break;
+      case 'jump-error': jumpToError(); break;
+      case 'reload': requestReload(); break;
+      case 'reload-force': load(); break;
+      case 'confirm-keep': $('confirm-sheet').close(); break;
+      case 'confirm-discard': $('confirm-sheet').close(); load(); break;
+      case 'route-cancel': closeRoute(); break;
+      case 'route-back': r.step = Math.max(1, r.step - 1); renderRoute(); break;
+      case 'route-step': r.step = Number(btn.dataset.step); renderRoute(); break;
+      case 'route-line': {
+        const idx = Number(btn.dataset.idx);
+        if (idx !== r.lineIdx) Object.assign(r, { lineIdx: idx, turnUid: null, onUid: null, offUid: null });
+        r.query = state.lines[idx].no;
+        r.step = 2;
+        renderRoute();
+        break;
+      }
+      case 'route-turn':
+        if (btn.dataset.uid !== r.turnUid) Object.assign(r, { turnUid: btn.dataset.uid, onUid: null, offUid: null });
+        r.step = 3;
+        renderRoute();
+        break;
+      case 'route-on': {
+        const stations = routeTurnOf(r)?.stations || [];
+        r.onUid = btn.dataset.uid;
+        const onIdx = stations.findIndex((s) => s.uid === r.onUid);
+        const offIdx = stations.findIndex((s) => s.uid === r.offUid);
+        if (offIdx <= onIdx) r.offUid = null;
+        r.step = 4;
+        renderRoute();
+        break;
+      }
+      case 'route-off':
+        r.offUid = btn.dataset.uid;
+        renderRoute();
+        $('route-foot').querySelector('[data-action="route-apply"]')?.focus();
+        break;
+      case 'route-apply': applyRoute(); break;
+      default: break;
+    }
+  });
+
+  document.addEventListener('input', (event) => {
+    const input = event.target;
+    if (input.dataset.input === 'route-query' && state.route) {
+      state.route.query = input.value;
+      $('route-results').innerHTML = routeResultsHtml(state.route);
+      return;
+    }
+    if (input.dataset.input !== 'name') return;
+    const card = input.closest('[data-key]');
+    const t = findTarget(card.dataset.key);
+    t.name = input.value;
+    card.querySelector('.target-name').textContent = targetName(t);
+    card.querySelector('[data-action="delete-target"]').setAttribute('aria-label', `${targetName(t)} 삭제`);
+    if (state.showErrors) {
+      const v = U.validateUiTarget(t, today());
+      card.classList.toggle('has-error', !v.valid);
+      card.querySelector('.chips').innerHTML = summaryChips(t, v);
+      input.classList.toggle('is-error', !!v.fields.name);
+      input.toggleAttribute('aria-invalid', !!v.fields.name);
+      card.querySelector(`#${card.dataset.key}-name-err`)?.remove();
+      if (v.fields.name) input.insertAdjacentHTML('afterend', errorHtml(`${card.dataset.key}-name-err`, v.fields.name));
+    }
+    changed(null);
+  });
+
+  document.addEventListener('change', (event) => {
+    const input = event.target;
+    const key = input.closest('[data-key]')?.dataset.key;
+    const t = key ? findTarget(key) : null;
+    if (!t) return;
+    if (input.dataset.toggle) {
+      t[input.dataset.toggle] = input.checked;
+      changed(key);
+    } else if (input.dataset.input === 'fallback') {
+      t.seatPreference.fallbackMode = input.value;
+      changed(key, { card: false });
+    } else if (input.dataset.input === 'extra-date' && input.value) {
+      t.monitorDates = [...new Set([...t.monitorDates, input.value])].sort();
+      changed(key);
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && event.target.dataset?.input === 'route-query') {
+      event.preventDefault();
+      $('route-results').querySelector('.option')?.click();
+    }
+  });
+
+  $('route-sheet').addEventListener('cancel', (event) => { event.preventDefault(); closeRoute(); });
+  for (const sheet of document.querySelectorAll('.sheet')) {
+    // 시트 바깥(배경)을 누르면 닫는다. 노선 시트는 취소와 같다.
+    sheet.addEventListener('click', (event) => {
+      if (event.target !== sheet) return;
+      if (sheet.id === 'route-sheet') closeRoute(); else sheet.close();
+    });
+  }
+
+  window.addEventListener('beforeunload', (event) => {
+    if (!changeCount()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
+
+  $('reload-btn').innerHTML = ICONS.reload;
+  load();
+  setInterval(refreshStatus, 60 * 1000);
 </script>
 </body>
 </html>

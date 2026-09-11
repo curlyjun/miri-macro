@@ -147,7 +147,7 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 
 ## 설정 페이지
 
-`server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
+`server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 첫 화면에는 다음 자동예약·빈자리 확인 일정, 최근 예약 결과(`runtime/state.json`), 마지막 확인 시각(`runtime/monitor.log`의 수정 시각)이 보입니다(`/api/status`). 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
 
 서버는 `scripts/settings-watchdog.sh`가 `node --watch`로 띄웁니다. `server.js`나 `lib/`를 고치면 스스로 재시작하고, 페이지(`docs/`)와 설정 파일은 요청마다 새로 읽으므로 새로고침만 하면 됩니다. `--watch`는 서버가 죽으면 다음 파일 변경까지 기다리기만 하므로, 감시 스크립트가 5분마다 실제 응답을 확인해 없으면 새로 띄웁니다.
 
