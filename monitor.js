@@ -2,7 +2,12 @@
 
 const fs = require("fs");
 const path = require("path");
-const { loadConfig, normalizeConfig, validateTarget } = require("./lib/config");
+const {
+  RUNTIME_CONFIG_PATH,
+  loadConfig,
+  normalizeConfig,
+  validateTarget,
+} = require("./lib/config");
 const { attemptBooking } = require("./lib/booking");
 const { runMonitorTargets } = require("./lib/monitoring");
 const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
@@ -30,20 +35,16 @@ function kstParts(now = Date.now()) {
   };
 }
 
-function formatAppliedConfig(value) {
-  const [commit = "", syncedAt] = value.trim().split("|", 2);
-  const shortCommit = commit.slice(0, 7);
-  if (!shortCommit) return "로컬 설정";
-  return syncedAt ? `${shortCommit} (${syncedAt} 동기화)` : shortCommit;
-}
-
-function readAppliedCommit() {
+// 설정 페이지는 runtime/config.json에 저장하므로 그 파일의 수정 시각이 곧 마지막 저장 시각이다.
+function describeAppliedConfig({ runtimePath = RUNTIME_CONFIG_PATH } = {}) {
+  let savedAt;
   try {
-    const value = fs.readFileSync(path.join(RUNTIME_DIR, "applied-config-commit"), "utf8");
-    return formatAppliedConfig(value);
+    savedAt = fs.statSync(runtimePath).mtimeMs;
   } catch {
-    return "로컬 설정";
+    return "저장소 config.json";
   }
+  const kst = new Date(savedAt + 9 * 3600 * 1000).toISOString();
+  return `로컬 설정 (${kst.slice(0, 10)} ${kst.slice(11, 16)} 저장)`;
 }
 
 async function runMonitor({
@@ -144,7 +145,7 @@ async function runMonitor({
           `💚 <b>MiRi 매크로 일일 상태</b>\n` +
             `확인 대상: ${summary.targetsChecked}개\n` +
             `확인 날짜: ${summary.datesChecked}개\n` +
-            `적용 설정: ${escapeHtml(readAppliedCommit())}\n` +
+            `적용 설정: ${escapeHtml(describeAppliedConfig())}\n` +
             `🕐 ${escapeHtml(executedAt)}`,
         );
       }
@@ -183,4 +184,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { formatAppliedConfig, kstParts, main, runMonitor };
+module.exports = { describeAppliedConfig, kstParts, main, runMonitor };

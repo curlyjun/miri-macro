@@ -113,15 +113,13 @@
 <body>
   <header class="global-nav"><div class="nav-inner"><a class="wordmark" href="#top">MiRi</a><span>예약 설정</span></div></header>
   <main id="top">
-    <section class="sub-nav"><div class="content-frame"><h1>예약 설정</h1><span>GitHub Pages</span></div></section>
+    <section class="sub-nav"><div class="content-frame"><h1>예약 설정</h1><span>이 Mac</span></div></section>
     <section class="connection-section">
       <div class="content-frame connection-grid">
-        <div class="connection-copy"><p class="eyebrow">MiRi Macro</p><h2>내 일정에 맞춘<br />예약 자동화</h2><p>GitHub 저장소에서 설정을 불러와 버스, 요일, 선호 좌석과 모니터링 날짜를 관리합니다.</p></div>
+        <div class="connection-copy"><p class="eyebrow">MiRi Macro</p><h2>내 일정에 맞춘<br />예약 자동화</h2><p>이 Mac에 저장된 설정을 불러와 버스, 요일, 선호 좌석과 모니터링 날짜를 관리합니다.</p></div>
         <div class="connection-form">
-          <label>저장소 <input type="text" id="repo" placeholder="예: username/miri-macro" /></label>
-          <label>Personal Access Token <input type="password" id="pat" placeholder="github_pat_..." /></label>
-          <p class="form-note">PAT는 이 탭에서만 임시 보관되며, 탭을 닫으면 삭제됩니다.</p>
-          <div><button class="btn btn-primary" onclick="loadConfig()">설정 불러오기</button></div>
+          <p class="form-note">저장하면 이 Mac의 runtime/config.json에 바로 반영되고, 다음 실행부터 적용됩니다.</p>
+          <div><button class="btn btn-primary" onclick="loadConfig()">설정 다시 불러오기</button></div>
         </div>
       </div>
     </section>
@@ -143,7 +141,7 @@
     { code: 'SUN', label: '일' },
   ];
   let configData = null;
-  let fileSha = '';
+  let configVersion = '';
   let lineData = [];
   const turnMap = {};    // lineTurnUid -> { lineNo, lineName, departureTime, stations, line }
   const stationMap = {}; // stationUid -> stationName
@@ -164,18 +162,12 @@
     return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
   }
 
-  function getGitHub() {
-    const repo = document.getElementById('repo').value.trim();
-    const pat = document.getElementById('pat').value.trim();
-    sessionStorage.setItem('gh_repo', repo);
-    sessionStorage.setItem('gh_pat', pat);
-    return { repo, pat };
+  async function responseError(res) {
+    const body = await res.json().catch(() => ({}));
+    return body.error || `설정 서버 ${res.status}`;
   }
 
-  window.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('repo').value = sessionStorage.getItem('gh_repo') || 'curlyjun/miri-macro';
-    document.getElementById('pat').value = sessionStorage.getItem('gh_pat') || '';
-  });
+  window.addEventListener('DOMContentLoaded', () => loadConfig());
 
   window.addEventListener('beforeunload', (event) => {
     if (!isDirty) return;
@@ -184,18 +176,13 @@
   });
 
   async function loadConfig() {
-    const { repo, pat } = getGitHub();
-    if (!repo || !pat) { setStatus('저장소와 PAT를 입력해주세요.', 'err'); return; }
     setStatus('불러오는 중...');
     try {
-      const res = await fetch(`https://api.github.com/repos/${repo}/contents/config.json`, {
-        headers: { Authorization: `Bearer ${pat}`, Accept: 'application/vnd.github.v3+json' },
-      });
-      if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+      const res = await fetch('api/config', { cache: 'no-store' });
+      if (!res.ok) throw new Error(await responseError(res));
       const data = await res.json();
-      fileSha = data.sha;
-      const bytes = Uint8Array.from(atob(data.content.replace(/\n/g, '')), c => c.charCodeAt(0));
-      const loadedConfig = JSON.parse(new TextDecoder().decode(bytes));
+      configVersion = data.version;
+      const loadedConfig = data.config;
       configData = {
         ...loadedConfig,
         targets: (loadedConfig.targets || []).filter(Boolean).map(ConfigUtils.normalizeUiTarget),
@@ -203,7 +190,7 @@
 
       setStatus('노선 데이터 로딩 중...');
       try {
-        const lineRes = await fetch(`https://raw.githubusercontent.com/${repo}/main/line.json`);
+        const lineRes = await fetch('line.json');
         if (lineRes.ok) buildLineMaps((await lineRes.json()).data || []);
       } catch (e) {
         console.warn('line.json 로딩 실패:', e.message);
@@ -730,37 +717,29 @@
   }
 
   async function saveConfig() {
-    const { repo, pat } = getGitHub();
-    if (!repo || !pat) { setStatus('저장소와 PAT를 입력해주세요.', 'err'); return; }
     const validation = validateConfigForSave();
     if (!validation.valid) return;
     const nextConfig = validation.config;
-    const jsonStr = JSON.stringify(nextConfig, null, 2) + '\n';
-    const content = btoa(new TextEncoder().encode(jsonStr).reduce((acc, byte) => acc + String.fromCharCode(byte), ''));
     setStatus('저장 중...');
     try {
-      const res = await fetch(`https://api.github.com/repos/${repo}/contents/config.json`, {
+      const res = await fetch('api/config', {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${pat}`,
-          Accept: 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: 'config: update via GitHub Pages UI', content, sha: fileSha }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: nextConfig, version: configVersion }),
       });
       if (res.status === 409) {
         setStatus('다른 곳에서 설정이 변경되었습니다. 최신 설정을 다시 불러와주세요.', 'err');
         document.getElementById('reload-conflict').style.display = 'flex';
         return;
       }
-      if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+      if (!res.ok) throw new Error(await responseError(res));
       const data = await res.json();
-      fileSha = data.content.sha;
+      configVersion = data.version;
       configData = nextConfig;
       isDirty = false;
       document.getElementById('reload-conflict').style.display = 'none';
       renderConfig();
-      setStatus('저장 완료! Oracle의 다음 실행부터 자동 반영됩니다.', 'ok');
+      setStatus('저장 완료! 다음 실행부터 자동 반영됩니다.', 'ok');
     } catch (err) {
       setStatus(`저장 오류: ${err.message}`, 'err');
     }

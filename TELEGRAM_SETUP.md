@@ -45,9 +45,9 @@ TELEGRAM_CHAT_ID=123456789
 
 ---
 
-## 4단계: Oracle Cloud 환경변수 등록
+## 4단계: 운영 환경변수 확인
 
-현재 매크로는 GitHub Actions가 아니라 Oracle Cloud의 crontab에서 실행됩니다. Oracle 서버의 프로젝트 `.env`에 아래 값을 등록합니다.
+매크로는 로컬 Mac의 crontab에서 실행됩니다. 프로젝트 `.env`에 아래 값이 모두 들어 있어야 합니다.
 
 ```dotenv
 BEARER_TOKEN=Proxyman에서_복사한_MiRi_JWT_토큰
@@ -111,28 +111,47 @@ npm run monitor
 
 ---
 
-## Oracle Cloud crontab
+## 로컬 Mac crontab
 
-`scripts/run-oracle.sh`는 실행 전에 GitHub 원격 `main` 브랜치의 `config.json`만 가져와 검증하고 원자적으로 적용합니다. 동기화나 검증에 실패하면 이전 설정으로 예약하지 않고 실행을 중단합니다.
-
-적용 위치는 저장소의 `config.json`이 아니라 `runtime/config.json`입니다. 추적 중인 파일을 덮어쓰면 VM 작업 트리가 항상 dirty 상태가 되어 코드 배포 시 `git pull`이 막히기 때문입니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 그래서 로컬 개발은 예전과 똑같이 동작합니다.
+`scripts/run.sh`는 허용된 작업(`monitor`, `autobook`, `observe`, `update-lines`)만 받아 실행합니다. 예약 설정은 아래 [설정 페이지](#설정-페이지)에서 바꿉니다.
 
 ```bash
-chmod +x scripts/run-oracle.sh
+chmod +x scripts/run.sh
 crontab -e
 ```
 
-프로젝트 경로를 실제 Oracle 경로로 바꿔 등록합니다.
+cron은 로그인 셸의 PATH를 쓰지 않으므로 nvm의 node 경로를 직접 적습니다. 프로젝트가 `~/Documents` 아래에 있으면 macOS가 막으므로 시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한에 `/usr/sbin/cron`을 추가합니다. 맥이 잠든 동안의 작업은 건너뛰므로 잠자기를 막아 둡니다(Amphetamine 등). 시간은 Mac의 시간대인 KST 기준입니다.
 
 ```cron
+PATH=/Users/seongjunpark/.nvm/versions/node/v22.21.1/bin:/usr/bin:/bin
+M=/Users/seongjunpark/Documents/projects/miri-macro
+
 # 매일 10:00 KST, 7일 후 자동예약
-0 10 * * * cd /home/opc/miri-macro && ./scripts/run-oracle.sh autobook >> runtime/cron.log 2>&1
+0 10 * * * $M/scripts/run.sh autobook >> $M/runtime/auto_book.log 2>&1
 
 # 5분마다 지정 날짜 빈자리 확인 및 예약
-*/5 * * * * cd /home/opc/miri-macro && ./scripts/run-oracle.sh monitor >> runtime/cron.log 2>&1
+*/5 * * * * $M/scripts/run.sh monitor >> $M/runtime/monitor.log 2>&1
+
+# 매주 월요일 11:00 KST 노선 업데이트
+0 11 * * 1 $M/scripts/run.sh update-lines >> $M/runtime/update_lines.log 2>&1
+
+# 설정 페이지 서버. 꺼져 있으면 5분 안에 다시 켜지고, 떠 있으면 새 프로세스는 바로 끝난다.
+*/5 * * * * node $M/server.js >> $M/runtime/settings.log 2>&1
 ```
 
 관찰 전용으로 운영하려면 두 번째 줄의 `monitor`를 `observe`로 바꿉니다. `observe`는 예약 가능한 좌석을 선택해 알려주지만 예약 API를 호출하지 않습니다.
+
+## 설정 페이지
+
+`server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
+
+서버는 `127.0.0.1:8787`에만 열리므로 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 모바일에서는 Tailscale로 접근합니다. 아래 명령은 처음 한 번만 실행하면 재부팅 뒤에도 유지됩니다.
+
+```bash
+tailscale serve --bg 8787
+```
+
+`tailscale serve status`에 나오는 `https://<기기이름>.<tailnet>.ts.net` 주소로 접속합니다. 폰과 PC에서 동시에 고치다가 한쪽이 먼저 저장하면, 나중에 저장하는 쪽은 덮어쓰지 않고 다시 불러오라는 안내를 받습니다.
 
 ## 알림 정책
 
@@ -140,8 +159,8 @@ crontab -e
 - 같은 장애는 기본 6시간 동안 반복 알림을 보내지 않습니다.
 - 장애가 6시간 이상 계속되면 누적 횟수와 함께 다시 알립니다.
 - 정상화되면 복구 알림을 한 번 보냅니다.
-- 매일 오전 9시 이후 첫 정상 모니터 실행에서 적용 설정 커밋과 확인 대상을 요약합니다.
-- 런타임 상태와 잠금, 동기화된 설정은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
+- 매일 오전 9시 이후 첫 정상 모니터 실행에서 적용 설정의 마지막 저장 시각과 확인 대상을 요약합니다.
+- 런타임 상태와 잠금, 설정 페이지 저장본은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
 
 ## 전송 실패 대비
 
@@ -150,7 +169,8 @@ crontab -e
 
 - **IPv4 우선**: `api.telegram.org`는 AAAA 레코드를 가집니다. IPv6 주소만 있고 실제
   경로가 없는 서버에서는 MiRi API와 GitHub은 멀쩡한데 텔레그램만 `fetch failed`로
-  타임아웃됩니다. `dns.setDefaultResultOrder("ipv4first")`로 고정합니다.
+  타임아웃됩니다. `dns.setDefaultResultOrder("ipv4first")`로 고정합니다. Node 20+는
+  IPv4 연결이 250ms를 넘기면 IPv6로 넘어가므로 `net.setDefaultAutoSelectFamily(false)`도 둡니다.
 - **재시도**: 일시적 네트워크 오류와 5xx는 `TELEGRAM_RETRIES`(기본 3회)만큼 백오프
   재시도합니다. 4xx는 다시 보내도 같으므로 재시도하지 않습니다.
 - **미전송 큐**: 그래도 실패하면 메시지를 `runtime/outbox.jsonl`에 보관하고, 5분마다

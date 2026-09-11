@@ -9,6 +9,7 @@
     "autobook": "node auto_book.js",
     "observe": "node observe.js",
     "update-lines": "node update_lines.js",
+    "settings": "node server.js",
     "test": "node --test"
   },
   "dependencies": {
