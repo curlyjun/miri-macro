@@ -15,5 +15,6 @@ esac
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 mkdir -p runtime
+. "$ROOT_DIR/scripts/use-node.sh"
 
 npm run "$TASK"

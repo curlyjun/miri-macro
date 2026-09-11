@@ -7,6 +7,7 @@ set -uo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 HOST="${SETTINGS_HOST:-127.0.0.1}"
 PORT="${SETTINGS_PORT:-8790}"
+. "${ROOT_DIR}/scripts/use-node.sh"
 
 if curl -s -m 5 -o /dev/null -D - "http://${HOST}:${PORT}/" | grep -qi '^x-miri-settings: 1'; then
   exit 0
