@@ -158,10 +158,18 @@ test("출발 시간만 바꾸면 같은 승하차 정류장을 유지한다", ()
   assert.match(turnCase, /s\.uid === r\.offUid && s\.offYn/);
 });
 
-test("이미 노선이 있으면 키보드 없이 출발 시간 단계에서 연다", () => {
+test("노선 시트에는 키보드 입력이 없고, 노선이 있으면 버스는 두고 시간·정류장만 바꾼다", () => {
   const openRoute = page.slice(page.indexOf("function openRoute"), page.indexOf("function closeRoute"));
-  assert.match(openRoute, /step: info \? 2 : 1/);
-  assert.match(openRoute, /if \(info\)[^\n]*option\[aria-pressed="true"\][^\n]*focus/);
+  assert.match(openRoute, /steps: info \? \['turn', 'on', 'off'\] : \['line', 'turn', 'on', 'off'\]/);
+  assert.doesNotMatch(page, /data-input="route-query"|<input type="search"/);
+  assert.match(page, /data-action="route-region"/);
+});
+
+test("시트 손잡이와 제목 줄을 끌어내리면 닫힌다", () => {
+  assert.match(page, /function enableSheetDrag/);
+  assert.match(page, /enableSheetDrag\(\$\('route-sheet'\), closeRoute\)/);
+  assert.match(page, /enableSheetDrag\(\$\('confirm-sheet'\)/);
+  assert.match(page, /\.sheet-drag \{[^}]*touch-action: none/);
 });
 
 test("노선 변경은 초안에 담았다가 적용할 때만 대상에 반영한다", () => {

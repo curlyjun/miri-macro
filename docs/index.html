@@ -196,7 +196,10 @@
     @media (min-width: 640px) { .sheet { margin: auto; border-radius: 24px; } }
     @media (prefers-reduced-motion: no-preference) { .sheet[open] { animation: sheet-in .24s cubic-bezier(.2, .8, .2, 1); } }
     @keyframes sheet-in { from { transform: translateY(40px); opacity: .5; } }
-    .sheet-grabber { flex: 0 0 auto; width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--line-strong); }
+    /* 손잡이와 제목 줄을 끌어내리면 시트가 닫힌다(enableSheetDrag). */
+    .sheet-drag { flex: 0 0 auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+    .sheet-drag:active { cursor: grabbing; }
+    .sheet-grabber { width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--line-strong); }
     .sheet-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 10px 14px 0 24px; }
     .sheet-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
     .sheet-body { flex: 1 1 auto; min-height: 0; padding: 12px 24px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
@@ -206,7 +209,7 @@
     .btn-ghost:disabled { opacity: .45; }
     .confirm-actions { display: grid; gap: 8px; padding: 8px 24px calc(20px + env(safe-area-inset-bottom)); }
     .route-progress { flex: 0 0 auto; padding: 6px 24px 4px; }
-    .progress-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .progress-bars { display: grid; grid-template-columns: repeat(var(--steps, 4), 1fr); gap: 6px; }
     .progress-bars span { height: 4px; border-radius: 2px; background: var(--line); }
     .progress-bars span.is-done { background: color-mix(in srgb, var(--blue) 35%, var(--line)); }
     .progress-bars span.is-current { background: var(--blue); }
@@ -216,7 +219,12 @@
     .crumbs::-webkit-scrollbar { display: none; }
     .crumb { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--card); font-size: 13px; font-weight: 600; white-space: nowrap; }
     .crumb span { color: var(--muted); font-weight: 500; }
-    .search-input { min-height: 50px; border-radius: 14px; padding: 12px 16px; }
+    .route-fixed { margin: 14px 0 0; color: var(--muted); font-size: 13.5px; }
+    .route-fixed b { color: var(--ink); }
+    .region-chips { position: sticky; top: -12px; z-index: 1; display: flex; gap: 6px; margin: -12px -24px 0; padding: 12px 24px 10px; overflow-x: auto; background: var(--card); scrollbar-width: none; }
+    .region-chips::-webkit-scrollbar { display: none; }
+    .region-chip { flex: 0 0 auto; min-height: 38px; padding: 0 14px; border: 1.5px solid var(--line-strong); border-radius: 999px; background: var(--card); font-size: 14px; font-weight: 600; white-space: nowrap; }
+    .region-chip[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--blue-ink); }
     .options { display: grid; gap: 2px; margin: 8px -8px 0; padding: 0; list-style: none; }
     .option { width: 100%; min-height: 54px; display: grid; grid-template-columns: 56px 1fr 22px; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 12px; background: transparent; font-size: 15.5px; text-align: left; }
     .option.no-time { grid-template-columns: auto 1fr 22px; gap: 10px; }
@@ -258,8 +266,8 @@
   </div>
 
   <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
-    <div class="sheet-grabber" aria-hidden="true"></div>
-    <div class="sheet-head"><h2 id="confirm-title">저장하지 않은 변경이 있어요</h2></div>
+    <div class="sheet-drag"><div class="sheet-grabber" aria-hidden="true"></div>
+      <div class="sheet-head"><h2 id="confirm-title">저장하지 않은 변경이 있어요</h2></div></div>
     <div class="sheet-body"><p id="confirm-text"></p></div>
     <div class="confirm-actions">
       <button type="button" class="btn btn-primary" data-action="confirm-keep">계속 편집</button>
@@ -268,8 +276,8 @@
   </dialog>
 
   <dialog class="sheet route-sheet" id="route-sheet" aria-labelledby="route-title">
-    <div class="sheet-grabber" aria-hidden="true"></div>
-    <div class="sheet-head"><h2 id="route-title">노선 변경</h2><button type="button" class="icon-btn" id="route-close" data-action="route-cancel" aria-label="닫기"></button></div>
+    <div class="sheet-drag"><div class="sheet-grabber" aria-hidden="true"></div>
+      <div class="sheet-head"><h2 id="route-title">시간·정류장 변경</h2><button type="button" class="icon-btn" id="route-close" data-action="route-cancel" aria-label="닫기"></button></div></div>
     <div class="route-progress" id="route-progress"></div>
     <div class="sheet-body" id="route-body"></div>
     <div class="sheet-foot" id="route-foot"></div>
@@ -285,8 +293,14 @@
   const MAX_SEATS = 5;
   const KST_OFFSET_MS = 9 * 3600 * 1000;
   const FRESH_CHECK_MS = 12 * 60 * 1000;
-  const ROUTE_STEPS = ['노선', '출발 시간', '승차', '하차'];
-  const ROUTE_QUESTIONS = ['어떤 노선을 타세요?', '몇 시 버스를 타세요?', '어디서 타세요?', '어디서 내리세요?'];
+  const STEP_META = {
+    line: { label: '노선', question: '어떤 노선을 타세요?' },
+    turn: { label: '출발 시간', question: '몇 시 버스를 타세요?' },
+    on: { label: '승차', question: '어디서 타세요?' },
+    off: { label: '하차', question: '어디서 내리세요?' },
+  };
+  // "화성 → 수원 → 서울"의 첫 지역을 출발 지역으로 본다.
+  const regionOf = (line) => U.formatLineName(line.name).split('→')[0].trim() || '기타';
   const ICONS = {
     reload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>',
@@ -533,7 +547,7 @@
         ${errorHtml(`${k}-name-err`, f.name)}
       </div>
       <section class="group" data-error-for="route" aria-labelledby="${k}-route-h">
-        <div class="group-head"><h3 id="${k}-route-h">노선</h3><button type="button" class="link-btn" data-action="open-route" data-fid="${k}:route">${t.lineTurnUid ? '노선 변경' : '노선 고르기'}</button></div>
+        <div class="group-head"><h3 id="${k}-route-h">노선</h3><button type="button" class="link-btn" data-action="open-route" data-fid="${k}:route">${t.lineTurnUid ? '시간·정류장 변경' : '노선 고르기'}</button></div>
         <div class="route-box${f.route ? ' is-error' : ''}">${routeBoxHtml(t)}</div>
         ${errorHtml(`${k}-route-err`, f.route)}
       </section>
@@ -894,15 +908,18 @@
   }
 
   // ───────── 노선 시트: 고르는 동안은 초안에만 담고 “적용”할 때만 대상에 반영한다 ─────────
+  // 키보드 입력은 두지 않는다(모바일에서 키보드가 시트를 가린다). 이미 노선이 있는 대상은 버스는 그대로 두고
+  // 출발 시간·정류장만 바꾼다. 다른 버스를 타려면 예약 대상을 새로 추가한다.
   function openRoute(key) {
     const t = findTarget(key);
     if (!t) return;
     const info = state.turns.get(t.lineTurnUid);
-    // 노선이 이미 있으면 보통 시간이나 정류장만 바꾸므로 출발 시간 단계에서 연다(키보드 없이).
+    const usedLine = state.targets.map((x) => state.turns.get(x.lineTurnUid)?.line).find(Boolean);
     state.route = {
       key,
-      step: info ? 2 : 1,
-      query: info ? info.line.no : '',
+      steps: info ? ['turn', 'on', 'off'] : ['line', 'turn', 'on', 'off'],
+      step: 0,
+      region: usedLine ? regionOf(usedLine) : lineRegions()[0] || '',
       lineIdx: info ? state.lines.indexOf(info.line) : -1,
       turnUid: info ? t.lineTurnUid : null,
       onUid: info ? t.onStationUid || null : null,
@@ -911,8 +928,14 @@
     // 열린 뒤에 그려야 목록 크기를 재서 고른 항목을 가운데로 옮길 수 있다.
     openSheet($('route-sheet'));
     renderRoute();
-    if (info) $('route-body').querySelector('.option[aria-pressed="true"]')?.focus();
-    else $('route-body').querySelector('input')?.focus();
+    $('route-body').querySelector('.option[aria-pressed="true"]')?.focus({ preventScroll: true });
+  }
+
+  // 출발 지역 목록. 노선이 많은 지역부터 보여준다.
+  function lineRegions() {
+    const counts = new Map();
+    for (const line of state.lines) counts.set(regionOf(line), (counts.get(regionOf(line)) || 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([region]) => region);
   }
 
   function closeRoute() {
@@ -925,25 +948,26 @@
   const routeLineOf = (r) => state.lines[r.lineIdx] || null;
   const routeTurnOf = (r) => state.turns.get(r.turnUid)?.turn || null;
 
-  function routeStepDone(r, n) {
-    return [r.lineIdx >= 0, !!r.turnUid, !!r.onUid, !!r.offUid][n - 1];
-  }
+  const routeDone = (r, key) => ({ line: r.lineIdx >= 0, turn: !!r.turnUid, on: !!r.onUid, off: !!r.offUid })[key];
+  const routeComplete = (r) => ['line', 'turn', 'on', 'off'].every((key) => routeDone(r, key));
 
   function renderRoute() {
     const r = state.route;
     if (!r) return;
     const line = routeLineOf(r);
     const turn = routeTurnOf(r);
-    const values = [line?.no, departure(turn) && `${departure(turn)} 출발`, stationOf(turn, r.onUid)?.name, stationOf(turn, r.offUid)?.name];
-    const complete = ROUTE_STEPS.every((_, i) => routeStepDone(r, i + 1));
-    const bars = ROUTE_STEPS.map((_, i) => `<span class="${i + 1 < r.step || routeStepDone(r, i + 1) ? 'is-done' : ''}${i + 1 === r.step ? ' is-current' : ''}"></span>`).join('');
+    const current = r.steps[r.step];
+    const values = { line: line?.no, turn: departure(turn) && `${departure(turn)} 출발`, on: stationOf(turn, r.onUid)?.name, off: stationOf(turn, r.offUid)?.name };
+    const bars = r.steps.map((key, i) => `<span class="${i === r.step ? 'is-current' : routeDone(r, key) ? 'is-done' : ''}"></span>`).join('');
     // 이미 고른 값은 한 줄 칩으로 보여주고, 누르면 그 단계로 돌아간다.
-    const crumbs = ROUTE_STEPS.map((label, i) => (i + 1 === r.step || !routeStepDone(r, i + 1) ? ''
-      : `<button type="button" class="crumb" data-action="route-step" data-step="${i + 1}" aria-label="${label} 다시 고르기, 지금 ${esc(values[i])}"><span>${label}</span>${esc(values[i])}</button>`)).join('');
-    $('route-title').textContent = findTarget(r.key)?.lineTurnUid ? '노선 변경' : '노선 고르기';
-    $('route-progress').innerHTML = `<div class="progress-bars" aria-hidden="true">${bars}</div>
-      <p class="step-count">${r.step} / ${ROUTE_STEPS.length} · ${ROUTE_STEPS[r.step - 1]}</p>
-      <h3 class="step-question">${ROUTE_QUESTIONS[r.step - 1]}</h3>
+    const crumbs = r.steps.map((key, i) => (i === r.step || !routeDone(r, key) ? ''
+      : `<button type="button" class="crumb" data-action="route-step" data-step="${i}" aria-label="${STEP_META[key].label} 다시 고르기, 지금 ${esc(values[key])}"><span>${STEP_META[key].label}</span>${esc(values[key])}</button>`)).join('');
+    const changing = r.steps[0] !== 'line';
+    $('route-title').textContent = changing ? '시간·정류장 변경' : '노선 고르기';
+    $('route-progress').innerHTML = `<div class="progress-bars" style="--steps: ${r.steps.length}" aria-hidden="true">${bars}</div>
+      ${changing && line ? `<p class="route-fixed"><b>${esc(line.no)}</b> ${esc(U.formatLineName(line.name))}</p>` : ''}
+      <p class="step-count">${r.step + 1} / ${r.steps.length} · ${STEP_META[current].label}</p>
+      <h3 class="step-question">${STEP_META[current].question}</h3>
       ${crumbs ? `<div class="crumbs">${crumbs}</div>` : ''}`;
     const body = $('route-body');
     body.innerHTML = routeBodyHtml(r, line, turn);
@@ -952,27 +976,25 @@
     body.scrollTop = picked
       ? picked.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - (body.clientHeight - picked.offsetHeight) / 2
       : 0;
-    const canNext = r.step < ROUTE_STEPS.length && routeStepDone(r, r.step);
-    $('route-foot').innerHTML = `<button type="button" class="btn btn-ghost" data-action="route-back"${r.step === 1 ? ' disabled' : ''}>이전</button>`
-      + (complete
+    const canNext = r.step < r.steps.length - 1 && routeDone(r, current);
+    $('route-foot').innerHTML = `<button type="button" class="btn btn-ghost" data-action="route-back"${r.step === 0 ? ' disabled' : ''}>이전</button>`
+      + (routeComplete(r)
         ? '<button type="button" class="btn btn-primary" data-action="route-apply">적용</button>'
         : `<button type="button" class="btn btn-primary" data-action="route-next"${canNext ? '' : ' disabled'}>다음</button>`);
   }
 
   function routeBodyHtml(r, line, turn) {
-    const note = '<p class="sheet-note">적용하기 전까지는 지금 노선이 그대로 유지돼요.</p>';
+    const note = '<p class="sheet-note">적용하기 전까지는 지금 설정이 그대로 유지돼요.</p>';
     if (!state.lines.length) return '<p>노선 데이터를 불러오지 못했어요. 새로고침한 뒤 다시 시도해 주세요.</p>';
-    if (r.step === 1) {
-      return `<input type="search" class="search-input" data-input="route-query" value="${esc(r.query)}" placeholder="노선 번호나 지역 (예: M4434, 화성)" aria-label="노선 검색" autocomplete="off" enterkeyhint="search">
-        <div id="route-results">${routeResultsHtml(r)}</div>${note}`;
-    }
-    if (r.step === 2) {
+    const current = r.steps[r.step];
+    if (current === 'line') return lineStepHtml(r) + note;
+    if (current === 'turn') {
       const turns = bookableTurns(line);
       if (!turns.length) return `<p>이 노선에는 지금 예약할 수 있는 운행이 없어요.</p>${note}`;
       return `<ul class="options">${turns.map((tn) => `<li><button type="button" class="option" data-action="route-turn" data-uid="${esc(tn.uid)}" aria-pressed="${tn.uid === r.turnUid}"><time>${esc(departure(tn))}</time><span>${esc(tn.stations?.[0]?.name || '')} → ${esc(tn.stations?.at(-1)?.name || '')}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
     }
     const stations = turn?.stations || [];
-    if (r.step === 3) {
+    if (current === 'on') {
       const ons = stations.filter((s) => s.onYn);
       return `<ul class="options">${ons.map((s) => `<li><button type="button" class="option" data-action="route-on" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.onUid}"><time>${esc(stationTime(s, 'on'))}</time><span>${esc(s.name)}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
     }
@@ -982,22 +1004,22 @@
     return `<ul class="options">${offs.map((s) => `<li><button type="button" class="option" data-action="route-off" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.offUid}"><time>${esc(stationTime(s, 'off'))}</time><span>${esc(s.name)}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
   }
 
-  function routeResultsHtml(r) {
-    const q = r.query.trim().toLowerCase();
-    if (!q) return '<p class="sheet-note">노선 번호나 지역 이름을 입력하세요.</p>';
-    const matches = state.lines
+  // 키보드 없이 고르도록 노선을 출발 지역별로 묶는다.
+  function lineStepHtml(r) {
+    const used = new Set(state.targets.map((x) => state.turns.get(x.lineTurnUid)?.line.no).filter(Boolean));
+    const chips = lineRegions().map((region) => `<button type="button" class="region-chip" data-action="route-region" data-region="${esc(region)}" aria-pressed="${region === r.region}">${esc(region)}</button>`).join('');
+    const lines = state.lines
       .map((line, idx) => ({ line, idx }))
-      .filter(({ line }) => line.no.toLowerCase().includes(q) || line.name.toLowerCase().includes(q));
-    if (!matches.length) return '<p class="sheet-note">검색 결과가 없어요.</p>';
-    const shown = matches.slice(0, 8);
-    return `<ul class="options">${shown.map(({ line, idx }) => `<li><button type="button" class="option no-time" data-action="route-line" data-idx="${idx}" aria-pressed="${idx === r.lineIdx}"><b>${esc(line.no)}</b><small>${esc(U.formatLineName(line.name))}</small><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>`
-      + (matches.length > shown.length ? `<p class="sheet-note">${matches.length}개 중 ${shown.length}개 · 더 입력해서 좁혀 보세요</p>` : '');
+      .filter(({ line }) => regionOf(line) === r.region)
+      .sort((a, b) => a.line.no.localeCompare(b.line.no, 'ko', { numeric: true }));
+    return `<div class="region-chips" role="group" aria-label="출발 지역">${chips}</div>
+      <ul class="options">${lines.map(({ line, idx }) => `<li><button type="button" class="option no-time" data-action="route-line" data-idx="${idx}" aria-pressed="${idx === r.lineIdx}"><b>${esc(line.no)}</b><small>${esc(U.formatLineName(line.name))}${used.has(line.no) ? ' · 사용 중' : ''}</small><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>`;
   }
 
   function applyRoute() {
     const r = state.route;
     const t = r && findTarget(r.key);
-    if (!t || !ROUTE_STEPS.every((_, i) => routeStepDone(r, i + 1))) return;
+    if (!t || !routeComplete(r)) return;
     const line = routeLineOf(r);
     t.lineTurnUid = r.turnUid;
     t.onStationUid = r.onUid;
@@ -1061,13 +1083,13 @@
       case 'confirm-keep': $('confirm-sheet').close(); break;
       case 'confirm-discard': $('confirm-sheet').close(); load(); break;
       case 'route-cancel': closeRoute(); break;
-      case 'route-back': r.step = Math.max(1, r.step - 1); renderRoute(); break;
+      case 'route-back': r.step = Math.max(0, r.step - 1); renderRoute(); break;
       case 'route-step': r.step = Number(btn.dataset.step); renderRoute(); break;
+      case 'route-region': r.region = btn.dataset.region; renderRoute(); break;
       case 'route-line': {
         const idx = Number(btn.dataset.idx);
         if (idx !== r.lineIdx) Object.assign(r, { lineIdx: idx, turnUid: null, onUid: null, offUid: null });
-        r.query = state.lines[idx].no;
-        r.step = 2;
+        r.step = r.steps.indexOf('turn');
         renderRoute();
         break;
       }
@@ -1079,19 +1101,19 @@
           const offIdx = stations.findIndex((s, i) => i > onIdx && s.uid === r.offUid && s.offYn);
           Object.assign(r, { turnUid: btn.dataset.uid, onUid: onIdx >= 0 ? r.onUid : null, offUid: onIdx >= 0 && offIdx >= 0 ? r.offUid : null });
         }
-        if (!r.onUid) r.step = 3;
-        else if (!r.offUid) r.step = 4;
+        if (!r.onUid) r.step = r.steps.indexOf('on');
+        else if (!r.offUid) r.step = r.steps.indexOf('off');
         renderRoute();
         break;
       }
-      case 'route-next': r.step = Math.min(ROUTE_STEPS.length, r.step + 1); renderRoute(); break;
+      case 'route-next': r.step = Math.min(r.steps.length - 1, r.step + 1); renderRoute(); break;
       case 'route-on': {
         const stations = routeTurnOf(r)?.stations || [];
         r.onUid = btn.dataset.uid;
         const onIdx = stations.findIndex((s) => s.uid === r.onUid);
         const offIdx = stations.findIndex((s) => s.uid === r.offUid);
         if (offIdx <= onIdx) r.offUid = null;
-        r.step = 4;
+        r.step = r.steps.indexOf('off');
         renderRoute();
         break;
       }
@@ -1107,11 +1129,6 @@
 
   document.addEventListener('input', (event) => {
     const input = event.target;
-    if (input.dataset.input === 'route-query' && state.route) {
-      state.route.query = input.value;
-      $('route-results').innerHTML = routeResultsHtml(state.route);
-      return;
-    }
     if (input.dataset.input !== 'name') return;
     const card = input.closest('[data-key]');
     const t = findTarget(card.dataset.key);
@@ -1147,12 +1164,48 @@
     }
   });
 
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter' && event.target.dataset?.input === 'route-query') {
-      event.preventDefault();
-      $('route-results').querySelector('.option')?.click();
-    }
-  });
+  // 손잡이·제목 줄을 아래로 끌면 시트가 따라 내려오고, 충분히 내리거나 빠르게 튕기면 닫힌다.
+  function enableSheetDrag(sheet, dismiss) {
+    const handle = sheet.querySelector('.sheet-drag');
+    let startY = null;
+    let lastY = 0;
+    let lastT = 0;
+    let speed = 0;
+    handle.addEventListener('pointerdown', (event) => {
+      if (event.target.closest('button')) return;
+      startY = event.clientY;
+      lastY = event.clientY;
+      lastT = event.timeStamp;
+      speed = 0;
+      try { handle.setPointerCapture(event.pointerId); } catch { /* 이미 끝난 포인터면 캡처 없이 진행한다 */ }
+      sheet.style.transition = 'none';
+    });
+    handle.addEventListener('pointermove', (event) => {
+      if (startY === null) return;
+      speed = (event.clientY - lastY) / Math.max(1, event.timeStamp - lastT);
+      lastY = event.clientY;
+      lastT = event.timeStamp;
+      sheet.style.transform = `translateY(${Math.max(0, event.clientY - startY)}px)`;
+    });
+    const release = (event) => {
+      if (startY === null) return;
+      const distance = Math.max(0, event.clientY - startY);
+      startY = null;
+      const shouldClose = distance > Math.min(140, sheet.offsetHeight * 0.3) || (distance > 20 && speed > 0.5);
+      sheet.style.transition = 'transform .2s ease';
+      sheet.style.transform = shouldClose ? `translateY(${sheet.offsetHeight}px)` : '';
+      setTimeout(() => {
+        sheet.style.transition = '';
+        if (!shouldClose) return;
+        sheet.style.transform = '';
+        dismiss();
+      }, 200);
+    };
+    handle.addEventListener('pointerup', release);
+    handle.addEventListener('pointercancel', release);
+  }
+  enableSheetDrag($('route-sheet'), closeRoute);
+  enableSheetDrag($('confirm-sheet'), () => $('confirm-sheet').close());
 
   $('route-sheet').addEventListener('cancel', (event) => { event.preventDefault(); closeRoute(); });
   for (const sheet of document.querySelectorAll('.sheet')) {
