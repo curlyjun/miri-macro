@@ -10,7 +10,8 @@ const { REPO_CONFIG_PATH, RUNTIME_CONFIG_PATH, validateConfig } = require("./lib
 // 같은 Wi-Fi의 다른 기기가 설정을 바꾸지 못하도록 기본은 루프백에만 연다.
 // 모바일에서 쓰려면 SETTINGS_HOST에 이 Mac의 Tailscale IP를 줘 tailnet 안에서만 열리게 한다.
 const DEFAULT_HOST = "127.0.0.1";
-const DEFAULT_PORT = 8787;
+// personal-assets가 8787을 쓰므로 겹치지 않게 둔다.
+const DEFAULT_PORT = 8790;
 
 function readConfigText({ runtimePath, repoPath }) {
   for (const candidate of [runtimePath, repoPath]) {
@@ -36,7 +37,7 @@ function writeConfigText(runtimePath, text) {
 
 function send(req, res, status, body, type) {
   let payload = Buffer.isBuffer(body) ? body : Buffer.from(body);
-  const headers = { "Content-Type": type, "Cache-Control": "no-store" };
+  const headers = { "Content-Type": type, "Cache-Control": "no-store", "X-Miri-Settings": "1" };
   // line.json이 6MB라 모바일에서 그대로 받으면 느리다. gzip하면 크게 준다.
   if (/\bgzip\b/.test(req.headers["accept-encoding"] || "")) {
     payload = zlib.gzipSync(payload);
@@ -126,18 +127,33 @@ function createSettingsServer({
   });
 }
 
+// 포트를 이미 누가 쓰고 있을 때, 그게 이 설정 서버인지 응답 헤더로 확인한다.
+async function isOwnServer(host, port) {
+  try {
+    const res = await fetch(`http://${host}:${port}/`, { signal: AbortSignal.timeout(3000) });
+    return res.headers.get("x-miri-settings") === "1";
+  } catch {
+    return false;
+  }
+}
+
 if (require.main === module) {
   const host = process.env.SETTINGS_HOST || DEFAULT_HOST;
   const port = Number(process.env.SETTINGS_PORT) || DEFAULT_PORT;
   const server = createSettingsServer();
-  // cron이 5분마다 이 파일을 실행해 꺼진 서버를 되살린다. 이미 떠 있으면 조용히 끝낸다.
-  server.on("error", (error) => {
-    if (error.code === "EADDRINUSE") process.exit(0);
-    throw error;
+  // cron이 5분마다 이 파일을 실행해 꺼진 서버를 되살린다. 이미 떠 있는 게 이 서버면
+  // 조용히 끝내고, 다른 프로그램이 포트를 차지했으면 매번 로그에 남겨 알아챌 수 있게 한다.
+  server.on("error", async (error) => {
+    if (error.code !== "EADDRINUSE") throw error;
+    if (await isOwnServer(host, port)) process.exit(0);
+    console.error(
+      `[설정] ${new Date().toISOString()} ${host}:${port}를 다른 프로그램이 쓰고 있습니다. SETTINGS_PORT로 다른 포트를 지정하세요.`,
+    );
+    process.exit(1);
   });
   server.listen(port, host, () => {
     console.log(`[설정] ${new Date().toISOString()} http://${host}:${port} 에서 대기 중`);
   });
 }
 
-module.exports = { createSettingsServer };
+module.exports = { createSettingsServer, isOwnServer };

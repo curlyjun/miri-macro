@@ -145,7 +145,7 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 
 `server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
 
-서버는 `SETTINGS_HOST`에 지정한 주소에만 열립니다(기본값 `127.0.0.1`). crontab에서 이 Mac의 Tailscale IP(`tailscale ip -4`로 확인)를 주면 tailnet에 로그인한 내 기기에서만 `http://100.106.227.92:8787`로 접속할 수 있고, 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 주소는 `http`지만 연결은 Tailscale이 암호화합니다.
+서버는 `SETTINGS_HOST`에 지정한 주소에만 열립니다(기본값 `127.0.0.1`). crontab에서 이 Mac의 Tailscale IP(`tailscale ip -4`로 확인)를 주면 tailnet에 로그인한 내 기기에서만 `http://100.106.227.92:8790`로 접속할 수 있고, 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 주소는 `http`지만 연결은 Tailscale이 암호화합니다.
 
 - 재부팅 직후 Tailscale보다 서버가 먼저 뜨면 주소를 잡지 못해 실패하지만, cron이 5분마다 다시 띄우므로 Tailscale이 올라온 뒤 자동으로 복구됩니다.
 - Mac에서도 `localhost`가 아니라 같은 `100.x` 주소로 엽니다.

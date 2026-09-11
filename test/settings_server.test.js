@@ -1,10 +1,11 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 const test = require("node:test");
 
-const { createSettingsServer } = require("../server");
+const { createSettingsServer, isOwnServer } = require("../server");
 
 const TARGET = {
   name: "출근",
@@ -109,4 +110,14 @@ test("설정 페이지와 쿼리가 붙은 스크립트 경로를 제공한다",
   assert.equal(script.status, 200);
   assert.match(script.headers.get("content-type"), /javascript/);
   assert.equal((await fetch(`${base}/server.js`)).status, 404);
+});
+
+test("포트를 쓰고 있는 게 이 설정 서버인지 다른 프로그램인지 구분한다", async (t) => {
+  const { base } = await startServer(t);
+  assert.equal(await isOwnServer("127.0.0.1", new URL(base).port), true);
+
+  const other = http.createServer((req, res) => res.end("personal-assets"));
+  await new Promise((resolve) => other.listen(0, "127.0.0.1", resolve));
+  t.after(() => other.close());
+  assert.equal(await isOwnServer("127.0.0.1", other.address().port), false);
 });
