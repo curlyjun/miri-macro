@@ -136,7 +136,7 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 0 11 * * 1 $M/scripts/run.sh update-lines >> $M/runtime/update_lines.log 2>&1
 
 # 설정 페이지 서버. 꺼져 있으면 5분 안에 다시 켜지고, 떠 있으면 새 프로세스는 바로 끝난다.
-*/5 * * * * node $M/server.js >> $M/runtime/settings.log 2>&1
+*/5 * * * * SETTINGS_HOST=100.106.227.92 node $M/server.js >> $M/runtime/settings.log 2>&1
 ```
 
 관찰 전용으로 운영하려면 두 번째 줄의 `monitor`를 `observe`로 바꿉니다. `observe`는 예약 가능한 좌석을 선택해 알려주지만 예약 API를 호출하지 않습니다.
@@ -145,13 +145,13 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 
 `server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
 
-서버는 `127.0.0.1:8787`에만 열리므로 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 모바일에서는 Tailscale로 접근합니다. 아래 명령은 처음 한 번만 실행하면 재부팅 뒤에도 유지됩니다.
+서버는 `SETTINGS_HOST`에 지정한 주소에만 열립니다(기본값 `127.0.0.1`). crontab에서 이 Mac의 Tailscale IP(`tailscale ip -4`로 확인)를 주면 tailnet에 로그인한 내 기기에서만 `http://100.106.227.92:8787`로 접속할 수 있고, 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 주소는 `http`지만 연결은 Tailscale이 암호화합니다.
 
-```bash
-tailscale serve --bg 8787
-```
+- 재부팅 직후 Tailscale보다 서버가 먼저 뜨면 주소를 잡지 못해 실패하지만, cron이 5분마다 다시 띄우므로 Tailscale이 올라온 뒤 자동으로 복구됩니다.
+- Mac에서도 `localhost`가 아니라 같은 `100.x` 주소로 엽니다.
+- 처음 실행할 때 macOS가 node의 수신 연결 허용을 물으면 허용합니다.
 
-`tailscale serve status`에 나오는 `https://<기기이름>.<tailnet>.ts.net` 주소로 접속합니다. 폰과 PC에서 동시에 고치다가 한쪽이 먼저 저장하면, 나중에 저장하는 쪽은 덮어쓰지 않고 다시 불러오라는 안내를 받습니다.
+폰과 PC에서 동시에 고치다가 한쪽이 먼저 저장하면, 나중에 저장하는 쪽은 덮어쓰지 않고 다시 불러오라는 안내를 받습니다.
 
 ## 알림 정책
 

@@ -7,8 +7,8 @@ const path = require("path");
 const zlib = require("zlib");
 const { REPO_CONFIG_PATH, RUNTIME_CONFIG_PATH, validateConfig } = require("./lib/config");
 
-// 같은 Wi-Fi의 다른 기기가 설정을 바꾸지 못하도록 루프백에만 연다.
-// 모바일은 `tailscale serve`가 tailnet 안에서만 이 포트로 중계한다.
+// 같은 Wi-Fi의 다른 기기가 설정을 바꾸지 못하도록 기본은 루프백에만 연다.
+// 모바일에서 쓰려면 SETTINGS_HOST에 이 Mac의 Tailscale IP를 줘 tailnet 안에서만 열리게 한다.
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8787;
 
