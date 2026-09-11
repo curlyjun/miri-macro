@@ -13,7 +13,7 @@ const {
   initCommon,
 } = require("./lib/common");
 
-const LINE_JSON_PATH = path.join(__dirname, "line.json");
+const { REPO_LINE_JSON_PATH, RUNTIME_LINE_JSON_PATH } = require("./lib/config");
 
 async function fetchLineRoute() {
   const url = `${getBaseUrl()}/line/route?searchText=&sortOrder=no%20asc`;
@@ -40,7 +40,8 @@ async function runUpdateLines() {
   // 기존 line.json 로드
   let oldData = [];
   try {
-    const raw = fs.readFileSync(LINE_JSON_PATH, "utf-8");
+    const source = fs.existsSync(RUNTIME_LINE_JSON_PATH) ? RUNTIME_LINE_JSON_PATH : REPO_LINE_JSON_PATH;
+    const raw = fs.readFileSync(source, "utf-8");
     oldData = JSON.parse(raw).data || [];
     console.log(`  기존 line.json: ${oldData.length}개 노선`);
   } catch (err) {
@@ -65,7 +66,9 @@ async function runUpdateLines() {
 
   if (hasChanges) {
     // line.json 업데이트
-    fs.writeFileSync(LINE_JSON_PATH, JSON.stringify(json, null, 2), "utf-8");
+    // 추적 중인 line.json을 덮어쓰면 작업 트리가 dirty해지므로 runtime/에 쓴다.
+    fs.mkdirSync(path.dirname(RUNTIME_LINE_JSON_PATH), { recursive: true });
+    fs.writeFileSync(RUNTIME_LINE_JSON_PATH, JSON.stringify(json, null, 2), "utf-8");
     console.log("  line.json 업데이트 완료");
 
     let changeText = "";

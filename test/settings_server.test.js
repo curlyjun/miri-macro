@@ -25,9 +25,10 @@ async function startServer(t) {
     runtimePath: path.join(dir, "runtime", "config.json"),
     repoPath: path.join(dir, "config.json"),
     docsDir: dir,
-    lineJsonPath: path.join(dir, "line.json"),
+    lineJsonPaths: [path.join(dir, "runtime", "line.json"), path.join(dir, "line.json")],
   };
   fs.writeFileSync(paths.repoPath, JSON.stringify({ targets: [TARGET] }));
+  fs.writeFileSync(path.join(dir, "line.json"), JSON.stringify({ data: ["repo"] }));
   fs.writeFileSync(path.join(dir, "index.html"), "<h1>예약 설정</h1>");
   fs.writeFileSync(path.join(dir, "config-utils.js"), "var ConfigUtils = {};");
 
@@ -110,6 +111,16 @@ test("설정 페이지와 쿼리가 붙은 스크립트 경로를 제공한다",
   assert.equal(script.status, 200);
   assert.match(script.headers.get("content-type"), /javascript/);
   assert.equal((await fetch(`${base}/server.js`)).status, 404);
+});
+
+test("노선 데이터는 runtime 사본이 있으면 그것을, 없으면 저장소 사본을 보낸다", async (t) => {
+  const { base, paths } = await startServer(t);
+  assert.deepEqual((await (await fetch(`${base}/line.json`)).json()).data, ["repo"]);
+
+  const [runtimeLinePath] = paths.lineJsonPaths;
+  fs.mkdirSync(path.dirname(runtimeLinePath), { recursive: true });
+  fs.writeFileSync(runtimeLinePath, JSON.stringify({ data: ["runtime"] }));
+  assert.deepEqual((await (await fetch(`${base}/line.json`)).json()).data, ["runtime"]);
 });
 
 test("포트를 쓰고 있는 게 이 설정 서버인지 다른 프로그램인지 구분한다", async (t) => {

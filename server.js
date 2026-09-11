@@ -5,7 +5,13 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const zlib = require("zlib");
-const { REPO_CONFIG_PATH, RUNTIME_CONFIG_PATH, validateConfig } = require("./lib/config");
+const {
+  REPO_CONFIG_PATH,
+  REPO_LINE_JSON_PATH,
+  RUNTIME_CONFIG_PATH,
+  RUNTIME_LINE_JSON_PATH,
+  validateConfig,
+} = require("./lib/config");
 
 // 같은 Wi-Fi의 다른 기기가 설정을 바꾸지 못하도록 기본은 루프백에만 연다.
 // 모바일에서 쓰려면 SETTINGS_HOST에 이 Mac의 Tailscale IP를 줘 tailnet 안에서만 열리게 한다.
@@ -71,12 +77,11 @@ function createSettingsServer({
   runtimePath = RUNTIME_CONFIG_PATH,
   repoPath = REPO_CONFIG_PATH,
   docsDir = path.join(__dirname, "docs"),
-  lineJsonPath = path.join(__dirname, "line.json"),
+  lineJsonPaths = [RUNTIME_LINE_JSON_PATH, REPO_LINE_JSON_PATH],
 } = {}) {
   const files = {
     "/": [path.join(docsDir, "index.html"), "text/html; charset=utf-8"],
     "/config-utils.js": [path.join(docsDir, "config-utils.js"), "text/javascript; charset=utf-8"],
-    "/line.json": [lineJsonPath, "application/json; charset=utf-8"],
   };
 
   async function handleConfig(req, res) {
@@ -115,6 +120,13 @@ function createSettingsServer({
     try {
       const { pathname } = new URL(req.url, "http://localhost");
       if (pathname === "/api/config") return await handleConfig(req, res);
+      if (pathname === "/line.json" && req.method === "GET") {
+        // 노선 업데이트는 runtime/에 쓴다. 아직 한 번도 안 돌았으면 저장소 사본을 보낸다.
+        const lineFile = lineJsonPaths.find((candidate) => fs.existsSync(candidate));
+        if (lineFile) {
+          return send(req, res, 200, fs.readFileSync(lineFile), "application/json; charset=utf-8");
+        }
+      }
       const file = files[pathname];
       if (!file || req.method !== "GET") {
         return sendJson(req, res, 404, { error: "없는 경로입니다." });
