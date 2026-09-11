@@ -135,8 +135,8 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 # 매주 월요일 11:00 KST 노선 업데이트
 0 11 * * 1 $M/scripts/run.sh update-lines >> $M/runtime/update_lines.log 2>&1
 
-# 설정 페이지 서버. 꺼져 있으면 5분 안에 다시 켜지고, 떠 있으면 새 프로세스는 바로 끝난다.
-*/5 * * * * SETTINGS_HOST=100.106.227.92 node $M/server.js >> $M/runtime/settings.log 2>&1
+# 설정 페이지 서버 감시. 응답이 없으면 node --watch로 새로 띄운다.
+*/5 * * * * SETTINGS_HOST=100.106.227.92 $M/scripts/settings-watchdog.sh >> $M/runtime/settings.log 2>&1
 ```
 
 관찰 전용으로 운영하려면 두 번째 줄의 `monitor`를 `observe`로 바꿉니다. `observe`는 예약 가능한 좌석을 선택해 알려주지만 예약 API를 호출하지 않습니다.
@@ -144,6 +144,8 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 ## 설정 페이지
 
 `server.js`가 `docs/index.html` 설정 페이지를 띄우고 `runtime/config.json`을 직접 읽고 씁니다. PAT가 필요 없고, 저장하면 다음 cron 실행부터 반영됩니다. 매크로는 `runtime/config.json`이 있으면 그것을, 없으면 저장소의 `config.json`을 읽습니다. 저장소 파일에 쓰지 않는 이유는 작업 트리가 dirty해져 `git pull`이 막히기 때문입니다.
+
+서버는 `scripts/settings-watchdog.sh`가 `node --watch`로 띄웁니다. `server.js`나 `lib/`를 고치면 스스로 재시작하고, 페이지(`docs/`)와 설정 파일은 요청마다 새로 읽으므로 새로고침만 하면 됩니다. `--watch`는 서버가 죽으면 다음 파일 변경까지 기다리기만 하므로, 감시 스크립트가 5분마다 실제 응답을 확인해 없으면 새로 띄웁니다.
 
 서버는 `SETTINGS_HOST`에 지정한 주소에만 열립니다(기본값 `127.0.0.1`). crontab에서 이 Mac의 Tailscale IP(`tailscale ip -4`로 확인)를 주면 tailnet에 로그인한 내 기기에서만 `http://100.106.227.92:8790`로 접속할 수 있고, 같은 Wi-Fi의 다른 기기는 접근할 수 없습니다. 주소는 `http`지만 연결은 Tailscale이 암호화합니다.
 
