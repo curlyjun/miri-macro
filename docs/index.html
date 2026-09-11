@@ -188,36 +188,46 @@
     .snackbar span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .snackbar button { flex: 0 0 auto; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #7fb8ff; font-weight: 700; }
 
-    .sheet { width: min(560px, 100%); max-width: 100%; max-height: min(88vh, calc(var(--vvh) - 12px), 760px); margin: auto auto var(--kb); padding: 0; border: 0; border-radius: 20px 20px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -8px 30px rgba(0, 0, 0, .18); }
+    .sheet { width: min(560px, 100%); max-width: 100%; max-height: min(92dvh, calc(var(--vvh) - 8px)); margin: auto auto var(--kb); padding: 0; border: 0; border-radius: 24px 24px 0 0; background: var(--card); color: var(--ink); box-shadow: 0 -10px 40px rgba(0, 0, 0, .22); overscroll-behavior: contain; }
     .sheet[open] { display: flex; flex-direction: column; }
+    /* 단계마다 시트 높이가 들쭉날쭉하지 않게 노선 시트는 높이를 고정하고 목록만 스크롤한다. */
+    .route-sheet[open] { height: min(92dvh, calc(var(--vvh) - 8px), 720px); }
     .sheet::backdrop { background: var(--overlay); }
-    @media (min-width: 640px) { .sheet { margin: auto; border-radius: 20px; } }
-    @media (prefers-reduced-motion: no-preference) { .sheet[open] { animation: sheet-in .22s ease-out; } }
-    @keyframes sheet-in { from { transform: translateY(28px); opacity: .6; } }
-    .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 10px 6px 16px; }
-    .sheet-head h2 { margin: 0; font-size: 18px; }
-    .sheet-body { min-height: 0; padding: 4px 16px 14px; overflow-y: auto; }
+    @media (min-width: 640px) { .sheet { margin: auto; border-radius: 24px; } }
+    @media (prefers-reduced-motion: no-preference) { .sheet[open] { animation: sheet-in .24s cubic-bezier(.2, .8, .2, 1); } }
+    @keyframes sheet-in { from { transform: translateY(40px); opacity: .5; } }
+    .sheet-grabber { flex: 0 0 auto; width: 40px; height: 5px; margin: 8px auto 0; border-radius: 3px; background: var(--line-strong); }
+    .sheet-head { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 10px 14px 0 24px; }
+    .sheet-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+    .sheet-body { flex: 1 1 auto; min-height: 0; padding: 12px 24px 16px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .sheet-body > p { margin: 0; color: var(--muted); }
-    .sheet-foot { display: flex; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); }
-    .sheet-foot .btn { flex: 1; }
-    .confirm-actions { display: grid; gap: 6px; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); }
-    .text-btn { min-height: 44px; padding: 0 10px; border: 0; background: none; color: var(--muted); font-weight: 600; }
-    .stepper { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0 16px 10px; list-style: none; }
-    .stepper button { max-width: 150px; min-height: 32px; padding: 0 12px; overflow: hidden; border: 0; border-radius: 999px; background: var(--chip); color: var(--muted); font-size: 12.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-    .stepper button.is-done { background: var(--blue-soft); color: var(--blue); }
-    .stepper button[aria-current="step"] { background: var(--blue); color: var(--blue-ink); }
-    .stepper button:disabled { opacity: .55; }
-    .search-input { border-radius: 999px; padding: 10px 18px; }
-    .options { margin: 10px 0 0; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; list-style: none; }
-    .options li + li { border-top: 1px solid var(--line); }
-    .option { width: 100%; min-height: 48px; display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 8px; padding: 8px 14px; border: 0; background: transparent; text-align: left; }
-    .option.no-time { grid-template-columns: auto 1fr; gap: 10px; }
-    .option time { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .sheet-foot { flex: 0 0 auto; display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 10px; padding: 12px 24px calc(14px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--card); }
+    .btn-ghost { background: var(--chip); color: var(--ink); }
+    .btn-ghost:disabled { opacity: .45; }
+    .confirm-actions { display: grid; gap: 8px; padding: 8px 24px calc(20px + env(safe-area-inset-bottom)); }
+    .route-progress { flex: 0 0 auto; padding: 6px 24px 4px; }
+    .progress-bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .progress-bars span { height: 4px; border-radius: 2px; background: var(--line); }
+    .progress-bars span.is-done { background: color-mix(in srgb, var(--blue) 35%, var(--line)); }
+    .progress-bars span.is-current { background: var(--blue); }
+    .step-count { margin: 16px 0 0; color: var(--blue); font-size: 13px; font-weight: 700; }
+    .step-question { margin: 2px 0 0; font-size: 19px; font-weight: 700; letter-spacing: -.02em; }
+    .crumbs { display: flex; gap: 6px; margin: 12px -24px 0; padding: 0 24px 2px; overflow-x: auto; scrollbar-width: none; }
+    .crumbs::-webkit-scrollbar { display: none; }
+    .crumb { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--card); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .crumb span { color: var(--muted); font-weight: 500; }
+    .search-input { min-height: 50px; border-radius: 14px; padding: 12px 16px; }
+    .options { display: grid; gap: 2px; margin: 8px -8px 0; padding: 0; list-style: none; }
+    .option { width: 100%; min-height: 54px; display: grid; grid-template-columns: 56px 1fr 22px; align-items: center; gap: 8px; padding: 6px 8px; border: 0; border-radius: 12px; background: transparent; font-size: 15.5px; text-align: left; }
+    .option.no-time { grid-template-columns: auto 1fr 22px; gap: 10px; }
+    .option time { color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 600; }
     .option small { color: var(--muted); }
+    .option .check { width: 22px; height: 22px; border: 2px solid var(--line-strong); border-radius: 50%; }
     .option:hover { background: var(--chip); }
     .option[aria-pressed="true"] { background: var(--blue-soft); color: var(--blue); font-weight: 700; }
     .option[aria-pressed="true"] time, .option[aria-pressed="true"] small { color: var(--blue); }
-    .sheet-note { margin: 10px 0 0; color: var(--muted); font-size: 12.5px; }
+    .option[aria-pressed="true"] .check { border-color: var(--blue); background: var(--blue) no-repeat center / 12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6.5l2.5 2.5L10 3.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+    .sheet-note { margin: 12px 0 0; color: var(--muted); font-size: 12.5px; }
   </style>
 </head>
 <body>
@@ -248,6 +258,7 @@
   </div>
 
   <dialog class="sheet" id="confirm-sheet" aria-labelledby="confirm-title">
+    <div class="sheet-grabber" aria-hidden="true"></div>
     <div class="sheet-head"><h2 id="confirm-title">저장하지 않은 변경이 있어요</h2></div>
     <div class="sheet-body"><p id="confirm-text"></p></div>
     <div class="confirm-actions">
@@ -256,9 +267,10 @@
     </div>
   </dialog>
 
-  <dialog class="sheet" id="route-sheet" aria-labelledby="route-title">
-    <div class="sheet-head"><h2 id="route-title">노선 선택</h2><button type="button" class="text-btn" data-action="route-cancel">취소</button></div>
-    <ol class="stepper" id="route-steps" aria-label="단계"></ol>
+  <dialog class="sheet route-sheet" id="route-sheet" aria-labelledby="route-title">
+    <div class="sheet-grabber" aria-hidden="true"></div>
+    <div class="sheet-head"><h2 id="route-title">노선 변경</h2><button type="button" class="icon-btn" id="route-close" data-action="route-cancel" aria-label="닫기"></button></div>
+    <div class="route-progress" id="route-progress"></div>
     <div class="sheet-body" id="route-body"></div>
     <div class="sheet-foot" id="route-foot"></div>
   </dialog>
@@ -274,9 +286,11 @@
   const KST_OFFSET_MS = 9 * 3600 * 1000;
   const FRESH_CHECK_MS = 12 * 60 * 1000;
   const ROUTE_STEPS = ['노선', '출발 시간', '승차', '하차'];
+  const ROUTE_QUESTIONS = ['어떤 노선을 타세요?', '몇 시 버스를 타세요?', '어디서 타세요?', '어디서 내리세요?'];
   const ICONS = {
     reload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v6h-6"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 13h10l1-13"/><path d="M9 7V4h6v3"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   };
 
   const $ = (id) => document.getElementById(id);
@@ -772,7 +786,26 @@
     const changes = changeCount();
     if (!changes) return load();
     $('confirm-text').textContent = `바꾼 내용 ${changes}개가 사라져요. 남기려면 “계속 편집”을 누른 뒤 먼저 저장하세요.`;
-    $('confirm-sheet').showModal();
+    openSheet($('confirm-sheet'));
+  }
+
+  // iOS(크롬 포함)는 모달이 열려 있어도 뒤 페이지가 스크롤되고, 그러면 브라우저 하단 도구막대가
+  // 나타나 시트를 가린다. 시트가 열려 있는 동안 페이지를 제자리에 고정해 둔다.
+  let lockedScrollY = null;
+  function lockPageScroll() {
+    if (lockedScrollY !== null) return;
+    lockedScrollY = window.scrollY;
+    Object.assign(document.body.style, { position: 'fixed', top: `-${lockedScrollY}px`, left: '0', right: '0' });
+  }
+  function unlockPageScroll() {
+    if (lockedScrollY === null || document.querySelector('.sheet[open]')) return;
+    Object.assign(document.body.style, { position: '', top: '', left: '', right: '' });
+    window.scrollTo(0, lockedScrollY);
+    lockedScrollY = null;
+  }
+  function openSheet(sheet) {
+    lockPageScroll();
+    sheet.showModal();
   }
 
   // ───────── 편집 ─────────
@@ -875,8 +908,9 @@
       onUid: info ? t.onStationUid || null : null,
       offUid: info ? t.offStationUid || null : null,
     };
+    // 열린 뒤에 그려야 목록 크기를 재서 고른 항목을 가운데로 옮길 수 있다.
+    openSheet($('route-sheet'));
     renderRoute();
-    $('route-sheet').showModal();
     if (info) $('route-body').querySelector('.option[aria-pressed="true"]')?.focus();
     else $('route-body').querySelector('input')?.focus();
   }
@@ -901,16 +935,28 @@
     const line = routeLineOf(r);
     const turn = routeTurnOf(r);
     const values = [line?.no, departure(turn) && `${departure(turn)} 출발`, stationOf(turn, r.onUid)?.name, stationOf(turn, r.offUid)?.name];
-    $('route-steps').innerHTML = ROUTE_STEPS.map((label, i) => {
-      const n = i + 1;
-      const done = routeStepDone(r, n);
-      const reachable = n === 1 || routeStepDone(r, n - 1);
-      return `<li><button type="button" data-action="route-step" data-step="${n}" class="${done ? 'is-done' : ''}"${r.step === n ? ' aria-current="step"' : ''}${reachable ? '' : ' disabled'}>${done ? `✓ ${esc(values[i])}` : `${n} ${label}`}</button></li>`;
-    }).join('');
-    $('route-body').innerHTML = routeBodyHtml(r, line, turn);
     const complete = ROUTE_STEPS.every((_, i) => routeStepDone(r, i + 1));
-    $('route-foot').innerHTML = `<button type="button" class="btn btn-secondary" data-action="route-back"${r.step === 1 ? ' disabled' : ''}>이전</button>`
-      + `<button type="button" class="btn btn-primary" data-action="route-apply"${complete ? '' : ' disabled'}>적용</button>`;
+    const bars = ROUTE_STEPS.map((_, i) => `<span class="${i + 1 < r.step || routeStepDone(r, i + 1) ? 'is-done' : ''}${i + 1 === r.step ? ' is-current' : ''}"></span>`).join('');
+    // 이미 고른 값은 한 줄 칩으로 보여주고, 누르면 그 단계로 돌아간다.
+    const crumbs = ROUTE_STEPS.map((label, i) => (i + 1 === r.step || !routeStepDone(r, i + 1) ? ''
+      : `<button type="button" class="crumb" data-action="route-step" data-step="${i + 1}" aria-label="${label} 다시 고르기, 지금 ${esc(values[i])}"><span>${label}</span>${esc(values[i])}</button>`)).join('');
+    $('route-title').textContent = findTarget(r.key)?.lineTurnUid ? '노선 변경' : '노선 고르기';
+    $('route-progress').innerHTML = `<div class="progress-bars" aria-hidden="true">${bars}</div>
+      <p class="step-count">${r.step} / ${ROUTE_STEPS.length} · ${ROUTE_STEPS[r.step - 1]}</p>
+      <h3 class="step-question">${ROUTE_QUESTIONS[r.step - 1]}</h3>
+      ${crumbs ? `<div class="crumbs">${crumbs}</div>` : ''}`;
+    const body = $('route-body');
+    body.innerHTML = routeBodyHtml(r, line, turn);
+    // 목록이 길면 지금 고른 항목이 푸터에 가려지지 않게 목록 가운데로 옮긴다(페이지는 잠겨 있으니 시트 안만 움직인다).
+    const picked = body.querySelector('.option[aria-pressed="true"]');
+    body.scrollTop = picked
+      ? picked.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop - (body.clientHeight - picked.offsetHeight) / 2
+      : 0;
+    const canNext = r.step < ROUTE_STEPS.length && routeStepDone(r, r.step);
+    $('route-foot').innerHTML = `<button type="button" class="btn btn-ghost" data-action="route-back"${r.step === 1 ? ' disabled' : ''}>이전</button>`
+      + (complete
+        ? '<button type="button" class="btn btn-primary" data-action="route-apply">적용</button>'
+        : `<button type="button" class="btn btn-primary" data-action="route-next"${canNext ? '' : ' disabled'}>다음</button>`);
   }
 
   function routeBodyHtml(r, line, turn) {
@@ -923,17 +969,17 @@
     if (r.step === 2) {
       const turns = bookableTurns(line);
       if (!turns.length) return `<p>이 노선에는 지금 예약할 수 있는 운행이 없어요.</p>${note}`;
-      return `<ul class="options">${turns.map((tn) => `<li><button type="button" class="option" data-action="route-turn" data-uid="${esc(tn.uid)}" aria-pressed="${tn.uid === r.turnUid}"><time>${esc(departure(tn))}</time><span>${esc(tn.stations?.[0]?.name || '')} → ${esc(tn.stations?.at(-1)?.name || '')}</span></button></li>`).join('')}</ul>${note}`;
+      return `<ul class="options">${turns.map((tn) => `<li><button type="button" class="option" data-action="route-turn" data-uid="${esc(tn.uid)}" aria-pressed="${tn.uid === r.turnUid}"><time>${esc(departure(tn))}</time><span>${esc(tn.stations?.[0]?.name || '')} → ${esc(tn.stations?.at(-1)?.name || '')}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
     }
     const stations = turn?.stations || [];
     if (r.step === 3) {
       const ons = stations.filter((s) => s.onYn);
-      return `<ul class="options">${ons.map((s) => `<li><button type="button" class="option" data-action="route-on" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.onUid}"><time>${esc(stationTime(s, 'on'))}</time><span>${esc(s.name)}</span></button></li>`).join('')}</ul>${note}`;
+      return `<ul class="options">${ons.map((s) => `<li><button type="button" class="option" data-action="route-on" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.onUid}"><time>${esc(stationTime(s, 'on'))}</time><span>${esc(s.name)}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
     }
     const onIdx = stations.findIndex((s) => s.uid === r.onUid);
     const offs = stations.slice(onIdx + 1).filter((s) => s.offYn);
     if (!offs.length) return `<p>이 정류장 뒤로 내릴 수 있는 정류장이 없어요. 승차 정류장을 다시 골라 주세요.</p>${note}`;
-    return `<ul class="options">${offs.map((s) => `<li><button type="button" class="option" data-action="route-off" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.offUid}"><time>${esc(stationTime(s, 'off'))}</time><span>${esc(s.name)}</span></button></li>`).join('')}</ul>${note}`;
+    return `<ul class="options">${offs.map((s) => `<li><button type="button" class="option" data-action="route-off" data-uid="${esc(s.uid)}" aria-pressed="${s.uid === r.offUid}"><time>${esc(stationTime(s, 'off'))}</time><span>${esc(s.name)}</span><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>${note}`;
   }
 
   function routeResultsHtml(r) {
@@ -944,7 +990,7 @@
       .filter(({ line }) => line.no.toLowerCase().includes(q) || line.name.toLowerCase().includes(q));
     if (!matches.length) return '<p class="sheet-note">검색 결과가 없어요.</p>';
     const shown = matches.slice(0, 8);
-    return `<ul class="options">${shown.map(({ line, idx }) => `<li><button type="button" class="option no-time" data-action="route-line" data-idx="${idx}" aria-pressed="${idx === r.lineIdx}"><b>${esc(line.no)}</b><small>${esc(U.formatLineName(line.name))}</small></button></li>`).join('')}</ul>`
+    return `<ul class="options">${shown.map(({ line, idx }) => `<li><button type="button" class="option no-time" data-action="route-line" data-idx="${idx}" aria-pressed="${idx === r.lineIdx}"><b>${esc(line.no)}</b><small>${esc(U.formatLineName(line.name))}</small><span class="check" aria-hidden="true"></span></button></li>`).join('')}</ul>`
       + (matches.length > shown.length ? `<p class="sheet-note">${matches.length}개 중 ${shown.length}개 · 더 입력해서 좁혀 보세요</p>` : '');
   }
 
@@ -1025,11 +1071,20 @@
         renderRoute();
         break;
       }
-      case 'route-turn':
-        if (btn.dataset.uid !== r.turnUid) Object.assign(r, { turnUid: btn.dataset.uid, onUid: null, offUid: null });
-        r.step = 3;
+      case 'route-turn': {
+        // 시간만 바꾸는 경우가 많으니 새 운행에도 같은 승하차 정류장이 있으면 그대로 둔다.
+        if (btn.dataset.uid !== r.turnUid) {
+          const stations = state.turns.get(btn.dataset.uid)?.turn.stations || [];
+          const onIdx = stations.findIndex((s) => s.uid === r.onUid && s.onYn);
+          const offIdx = stations.findIndex((s, i) => i > onIdx && s.uid === r.offUid && s.offYn);
+          Object.assign(r, { turnUid: btn.dataset.uid, onUid: onIdx >= 0 ? r.onUid : null, offUid: onIdx >= 0 && offIdx >= 0 ? r.offUid : null });
+        }
+        if (!r.onUid) r.step = 3;
+        else if (!r.offUid) r.step = 4;
         renderRoute();
         break;
+      }
+      case 'route-next': r.step = Math.min(ROUTE_STEPS.length, r.step + 1); renderRoute(); break;
       case 'route-on': {
         const stations = routeTurnOf(r)?.stations || [];
         r.onUid = btn.dataset.uid;
@@ -1101,6 +1156,7 @@
 
   $('route-sheet').addEventListener('cancel', (event) => { event.preventDefault(); closeRoute(); });
   for (const sheet of document.querySelectorAll('.sheet')) {
+    sheet.addEventListener('close', unlockPageScroll);
     // 시트 바깥(배경)을 누르면 닫는다. 노선 시트는 취소와 같다.
     sheet.addEventListener('click', (event) => {
       if (event.target !== sheet) return;
@@ -1128,6 +1184,7 @@
   fitSheetsToKeyboard();
 
   $('reload-btn').innerHTML = ICONS.reload;
+  $('route-close').innerHTML = ICONS.close;
   load();
   setInterval(refreshStatus, 60 * 1000);
 </script>

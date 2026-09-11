@@ -141,7 +141,21 @@ test("바텀시트는 키보드에 가려지지 않게 보이는 영역에 맞�
   assert.match(page, /interactive-widget=resizes-content/);
   assert.match(page, /visualViewport\?\.addEventListener\('resize', fitSheetsToKeyboard\)/);
   assert.match(page, /\.sheet \{[^}]*margin: auto auto var\(--kb\)/);
-  assert.match(page, /\.sheet \{[^}]*calc\(var\(--vvh\) - 12px\)/);
+  assert.match(page, /\.sheet \{[^}]*calc\(var\(--vvh\) - 8px\)/);
+});
+
+test("시트가 열려 있는 동안 뒤 페이지 스크롤을 잠그고 시트 안 스크롤이 새지 않게 한다", () => {
+  assert.match(page, /function openSheet\(sheet\) \{\s*lockPageScroll\(\);\s*sheet\.showModal\(\);/);
+  assert.match(page, /sheet\.addEventListener\('close', unlockPageScroll\)/);
+  assert.doesNotMatch(page, /\$\('(route|confirm)-sheet'\)\.showModal\(\)/);
+  assert.match(page, /\.sheet-body \{[^}]*overscroll-behavior: contain/);
+  assert.match(page, /\.sheet-body \{[^}]*padding: 12px 24px/);
+});
+
+test("출발 시간만 바꾸면 같은 승하차 정류장을 유지한다", () => {
+  const turnCase = page.slice(page.indexOf("case 'route-turn'"), page.indexOf("case 'route-next'"));
+  assert.match(turnCase, /s\.uid === r\.onUid && s\.onYn/);
+  assert.match(turnCase, /s\.uid === r\.offUid && s\.offYn/);
 });
 
 test("이미 노선이 있으면 키보드 없이 출발 시간 단계에서 연다", () => {
