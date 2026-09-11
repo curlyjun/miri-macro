@@ -65,10 +65,9 @@ TELEGRAM_RETRIES=3
 
 ## MiRi 토큰 갱신 방법
 
-액세스 토큰은 약 하루짜리지만 매 실행마다 refresh로 새로 받습니다. MiRi는 refresh할 때
-새 refresh 토큰도 함께 내려주는데, 매크로가 이를 `runtime/auth.json`에 저장해 다음 실행에서
-이어 쓰므로 monitor가 주기적으로 돌고 있으면 수동 갱신이 필요 없습니다. 오래 멈춰 있다가
-refresh 토큰까지 만료되면 스크립트가 텔레그램으로 알립니다.
+액세스 토큰(약 25시간)은 `runtime/auth.json`에 저장해 두고 만료 10분 전까지 재사용합니다. 그 뒤나 실행 중 401이 나면 refresh 토큰으로 새로 받고, 응답에 새 refresh 토큰이 오면 함께 저장해 이어 씁니다. 다만 지금까지는 refresh해도 같은 refresh 토큰이 돌아왔으므로 refresh 토큰 자체의 수명은 늘지 않는 것으로 보입니다.
+
+refresh 토큰까지 만료되면 텔레그램으로 `🔑 MiRi 토큰 만료 — 갱신 필요` 알림이 옵니다. 그때 아래 절차로 새 토큰을 넣습니다.
 
 **갱신 절차 (브라우저):**
 1. PC 크롬에서 https://commute.e-bus.co.kr/MIRI/login 로그인 (자동 로그인 체크)
@@ -120,14 +119,14 @@ chmod +x scripts/run.sh
 crontab -e
 ```
 
-cron은 로그인 셸의 PATH를 쓰지 않으므로 nvm의 node 경로를 직접 적습니다. 프로젝트가 `~/Documents` 아래에 있으면 macOS가 막으므로 시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한에 `/usr/sbin/cron`을 추가합니다. 맥이 잠든 동안의 작업은 건너뛰므로 잠자기를 막아 둡니다(Amphetamine 등). 시간은 Mac의 시간대인 KST 기준입니다.
+cron에는 nvm이 없으므로 각 스크립트가 `scripts/use-node.sh`로 nvm의 기본(default) 버전을 불러옵니다. crontab에 특정 버전 경로를 박아 두면 그 버전을 지우는 순간 모든 작업이 알림도 없이 멈추기 때문입니다. 프로젝트가 `~/Documents` 아래에 있으면 macOS가 막으므로 시스템 설정 → 개인정보 보호 및 보안 → 전체 디스크 접근 권한에 `/usr/sbin/cron`을 추가합니다. 맥이 잠든 동안의 작업은 건너뛰므로 잠자기를 막아 둡니다(Amphetamine 등). 시간은 Mac의 시간대인 KST 기준입니다.
 
 ```cron
-PATH=/Users/seongjunpark/.nvm/versions/node/v22.21.1/bin:/usr/bin:/bin
+PATH=/usr/local/bin:/usr/bin:/bin
 M=/Users/seongjunpark/Documents/projects/miri-macro
 
-# 매일 10:00 KST, 7일 후 자동예약
-0 10 * * * $M/scripts/run.sh autobook >> $M/runtime/auto_book.log 2>&1
+# 매일 09:59에 띄워 토큰을 준비하고 10:00:00 정각에 7일 후 날짜를 예약
+59 9 * * * $M/scripts/run.sh autobook >> $M/runtime/auto_book.log 2>&1
 
 # 5분마다 지정 날짜 빈자리 확인 및 예약
 */5 * * * * $M/scripts/run.sh monitor >> $M/runtime/monitor.log 2>&1
@@ -137,9 +136,14 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 
 # 설정 페이지 서버 감시. 응답이 없으면 node --watch로 새로 띄운다.
 */5 * * * * SETTINGS_HOST=100.106.227.92 $M/scripts/settings-watchdog.sh >> $M/runtime/settings.log 2>&1
+
+# 매일 04:30 로그 정리 (1MB가 넘으면 마지막 5000줄만 남김)
+30 4 * * * $M/scripts/trim-logs.sh >> $M/runtime/maintenance.log 2>&1
 ```
 
 관찰 전용으로 운영하려면 두 번째 줄의 `monitor`를 `observe`로 바꿉니다. `observe`는 예약 가능한 좌석을 선택해 알려주지만 예약 API를 호출하지 않습니다.
+
+노선 업데이트(`update-lines`)는 받은 데이터를 `runtime/line.json`에 저장하고, 설정 페이지와 다음 업데이트는 이 파일이 있으면 그것을, 없으면 저장소의 `line.json`을 읽습니다. 추적 중인 파일을 덮어써 작업 트리가 dirty해지지 않게 하기 위해서입니다.
 
 ## 설정 페이지
 
