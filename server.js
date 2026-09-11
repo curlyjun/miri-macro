@@ -19,10 +19,10 @@ const DEFAULT_HOST = "127.0.0.1";
 // personal-assets가 8787을 쓰므로 겹치지 않게 둔다.
 const DEFAULT_PORT = 8790;
 
-function readConfigText({ runtimePath, repoPath }) {
+function readConfigFile({ runtimePath, repoPath }) {
   for (const candidate of [runtimePath, repoPath]) {
     try {
-      return fs.readFileSync(candidate, "utf8");
+      return { text: fs.readFileSync(candidate, "utf8"), file: candidate };
     } catch (error) {
       if (error.code !== "ENOENT") throw error;
     }
@@ -78,6 +78,8 @@ function createSettingsServer({
   repoPath = REPO_CONFIG_PATH,
   docsDir = path.join(__dirname, "docs"),
   lineJsonPaths = [RUNTIME_LINE_JSON_PATH, REPO_LINE_JSON_PATH],
+  statePath = path.join(__dirname, "runtime", "state.json"),
+  monitorLogPath = path.join(__dirname, "runtime", "monitor.log"),
 } = {}) {
   const files = {
     "/": [path.join(docsDir, "index.html"), "text/html; charset=utf-8"],
@@ -86,8 +88,9 @@ function createSettingsServer({
 
   async function handleConfig(req, res) {
     if (req.method === "GET") {
-      const text = readConfigText({ runtimePath, repoPath });
-      return sendJson(req, res, 200, { config: JSON.parse(text), version: versionOf(text) });
+      const { text, file } = readConfigFile({ runtimePath, repoPath });
+      const savedAt = fs.statSync(file).mtime.toISOString();
+      return sendJson(req, res, 200, { config: JSON.parse(text), version: versionOf(text), savedAt });
     }
     if (req.method !== "PUT") {
       return sendJson(req, res, 405, { error: "허용되지 않는 요청입니다." });
@@ -103,7 +106,7 @@ function createSettingsServer({
       return sendJson(req, res, 400, { error: "요청 형식이 올바르지 않습니다." });
     }
     // 폰과 PC에서 동시에 고칠 때 나중 저장이 앞선 변경을 모르고 덮어쓰지 않게 한다.
-    if (body.version !== versionOf(readConfigText({ runtimePath, repoPath }))) {
+    if (body.version !== versionOf(readConfigFile({ runtimePath, repoPath }).text)) {
       return sendJson(req, res, 409, { error: "다른 곳에서 설정이 변경되었습니다." });
     }
     const validation = validateConfig(body.config);
@@ -113,13 +116,41 @@ function createSettingsServer({
 
     const text = `${JSON.stringify(body.config, null, 2)}\n`;
     writeConfigText(runtimePath, text);
-    return sendJson(req, res, 200, { version: versionOf(text) });
+    return sendJson(req, res, 200, { version: versionOf(text), savedAt: new Date().toISOString() });
+  }
+
+  // 설정 화면 첫 카드용: 최근 예약 결과와 진행 중인 실패는 state.json에서, 마지막 확인 시각은
+  // 5분마다 붙여 쓰는 monitor.log의 수정 시각에서 읽는다.
+  function handleStatus(req, res) {
+    let runtimeState = {};
+    try {
+      runtimeState = JSON.parse(fs.readFileSync(statePath, "utf8"));
+    } catch {
+      runtimeState = {};
+    }
+    let checkedAt = null;
+    try {
+      checkedAt = fs.statSync(monitorLogPath).mtime.toISOString();
+    } catch {
+      checkedAt = null;
+    }
+    const failures = Object.entries(runtimeState.failures || {}).map(([scope, item]) => ({
+      scope,
+      count: item.count,
+      since: item.firstAt,
+      lastAt: item.lastAt,
+    }));
+    const completed = [...(runtimeState.completed || [])]
+      .sort((a, b) => (b.bookedAt || 0) - (a.bookedAt || 0) || String(b.date).localeCompare(String(a.date)))
+      .slice(0, 20);
+    return sendJson(req, res, 200, { checkedAt, failures, completed });
   }
 
   return http.createServer(async (req, res) => {
     try {
       const { pathname } = new URL(req.url, "http://localhost");
       if (pathname === "/api/config") return await handleConfig(req, res);
+      if (pathname === "/api/status" && req.method === "GET") return handleStatus(req, res);
       if (pathname === "/line.json" && req.method === "GET") {
         // 노선 업데이트는 runtime/에 쓴다. 아직 한 번도 안 돌았으면 저장소 사본을 보낸다.
         const lineFile = lineJsonPaths.find((candidate) => fs.existsSync(candidate));

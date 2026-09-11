@@ -26,6 +26,8 @@ async function startServer(t) {
     repoPath: path.join(dir, "config.json"),
     docsDir: dir,
     lineJsonPaths: [path.join(dir, "runtime", "line.json"), path.join(dir, "line.json")],
+    statePath: path.join(dir, "runtime", "state.json"),
+    monitorLogPath: path.join(dir, "runtime", "monitor.log"),
   };
   fs.writeFileSync(paths.repoPath, JSON.stringify({ targets: [TARGET] }));
   fs.writeFileSync(path.join(dir, "line.json"), JSON.stringify({ data: ["repo"] }));
@@ -131,4 +133,37 @@ test("포트를 쓰고 있는 게 이 설정 서버인지 다른 프로그램인
   await new Promise((resolve) => other.listen(0, "127.0.0.1", resolve));
   t.after(() => other.close());
   assert.equal(await isOwnServer("127.0.0.1", other.address().port), false);
+});
+
+test("설정을 읽고 저장할 때 마지막 저장 시각을 함께 돌려준다", async (t) => {
+  const { base } = await startServer(t);
+  const data = await getConfig(base);
+  assert.ok(!Number.isNaN(Date.parse(data.savedAt)));
+
+  const res = await putConfig(base, { config: { targets: [TARGET] }, version: data.version });
+  assert.ok(!Number.isNaN(Date.parse((await res.json()).savedAt)));
+});
+
+test("상태 API는 최근 예약 결과, 실패, 마지막 확인 시각을 돌려준다", async (t) => {
+  const { base, paths } = await startServer(t);
+  fs.mkdirSync(path.dirname(paths.statePath), { recursive: true });
+  fs.writeFileSync(paths.statePath, JSON.stringify({
+    failures: { monitor: { fingerprint: "HTTP 401", firstAt: 1, lastAt: 2, lastNotifiedAt: 1, count: 3 } },
+    completed: [
+      { target: "출근", date: "2026-09-18", seatNo: "17", bookedAt: 200 },
+      { target: "출근", date: "2026-09-21", seatNo: "13", bookedAt: 300 },
+    ],
+  }));
+  fs.writeFileSync(paths.monitorLogPath, "모니터링 완료\n");
+
+  const status = await (await fetch(`${base}/api/status`)).json();
+  assert.deepEqual(status.completed.map((item) => item.date), ["2026-09-21", "2026-09-18"]);
+  assert.deepEqual(status.failures, [{ scope: "monitor", count: 3, since: 1, lastAt: 2 }]);
+  assert.ok(!Number.isNaN(Date.parse(status.checkedAt)));
+});
+
+test("상태 파일이 없으면 빈 상태를 돌려준다", async (t) => {
+  const { base } = await startServer(t);
+
+  assert.deepEqual(await (await fetch(`${base}/api/status`)).json(), { checkedAt: null, failures: [], completed: [] });
 });

@@ -33,14 +33,14 @@ test("일일 상태는 같은 날짜에 한 번만 보낸다", () => {
   assert.equal(state.recordDailyHealth("2026-07-14").notify, true);
 });
 
-test("예약 완료 날짜를 중복 없이 기록한다", () => {
-  const state = new RuntimeState();
+test("예약 완료 날짜를 예약 시각과 함께 중복 없이 기록한다", () => {
+  const state = new RuntimeState({ now: () => 1000 });
 
   state.recordCompleted("출근", "2026-07-14", 17);
   state.recordCompleted("출근", "2026-07-14", 17);
 
   assert.deepEqual(state.getCompleted(), [
-    { target: "출근", date: "2026-07-14", seatNo: 17 },
+    { target: "출근", date: "2026-07-14", seatNo: 17, bookedAt: 1000 },
   ]);
 });
 
