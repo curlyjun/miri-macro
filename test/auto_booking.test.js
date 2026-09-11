@@ -1,7 +1,37 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 
-const { getTargetDate, runAutoBookTargets } = require("../lib/auto-booking");
+const { getTargetDate, msUntilOpen, runAutoBookTargets } = require("../lib/auto-booking");
+
+test("열리기 5분 안에 시작하면 10:00 KST 정각까지 기다릴 시간을 돌려준다", () => {
+  assert.equal(msUntilOpen(Date.parse("2026-09-11T00:59:00Z")), 60_000); // 09:59 KST
+  assert.equal(msUntilOpen(Date.parse("2026-09-11T00:59:59.500Z")), 500);
+  assert.equal(msUntilOpen(Date.parse("2026-09-11T01:00:00Z")), 0); // 10:00 정각
+  assert.equal(msUntilOpen(Date.parse("2026-09-11T00:50:00Z")), 0); // 10분 전: 기다리지 않음
+  assert.equal(msUntilOpen(Date.parse("2026-09-11T03:00:00Z")), 0); // 수동 실행
+});
+
+test("열리지 않았으면 처음 30초는 1초, 그 뒤 1분은 10초 간격으로 다시 확인한다", async () => {
+  const delays = [];
+  let calls = 0;
+  const summary = await runAutoBookTargets({
+    targets: [{ name: "출근", autoBookEnabled: true, weekdays: ["MON"] }],
+    targetDate: "2026-08-03",
+    targetWeekday: "MON",
+    deps: {
+      getBookableDates: async () => {
+        calls += 1;
+        return { resultCode: 0, data: [] };
+      },
+      attemptBooking: async () => ({ status: "BOOKED" }),
+      sleep: async (ms) => delays.push(ms),
+    },
+  });
+
+  assert.equal(calls, 37);
+  assert.deepEqual(delays, [...Array(30).fill(1000), ...Array(6).fill(10000)]);
+  assert.equal(summary.notOpen, 1);
+});
 
 test("KST 기준 7일 뒤 날짜와 요일을 계산한다", () => {
   const result = getTargetDate(Date.parse("2026-07-12T16:00:00Z"));

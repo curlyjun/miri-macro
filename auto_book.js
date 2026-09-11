@@ -3,7 +3,7 @@
 const path = require("path");
 const { loadConfig, normalizeConfig, validateTarget } = require("./lib/config");
 const { attemptBooking } = require("./lib/booking");
-const { getTargetDate, runAutoBookTargets } = require("./lib/auto-booking");
+const { getTargetDate, msUntilOpen, runAutoBookTargets } = require("./lib/auto-booking");
 const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
 const { escapeHtml } = require("./lib/telegram");
 const { reportFatal } = require("./lib/run-alerts");
@@ -125,7 +125,15 @@ async function runAutoBook({
 
 async function main() {
   await initCommon();
-  const result = await withProcessLock("autobook", () => runAutoBook());
+  const result = await withProcessLock("autobook", async () => {
+    // 토큰 준비를 끝낸 뒤 10:00:00 정각에 첫 요청을 보낸다.
+    const wait = msUntilOpen();
+    if (wait) {
+      console.log(`[autobook] 예약 오픈까지 ${Math.ceil(wait / 1000)}초 대기`);
+      await sleep(wait);
+    }
+    return runAutoBook();
+  });
   if (result.skipped) console.log("[autobook] 이전 실행이 진행 중이라 건너뜁니다.");
   return result;
 }
