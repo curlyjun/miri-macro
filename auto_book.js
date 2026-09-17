@@ -53,6 +53,7 @@ async function runAutoBook({
       attemptBooking: deps.attemptBooking || attemptBooking,
       sleep: deps.sleep || sleep,
       onResult: (item) => results.push(item),
+      onHolidays: (holidays) => state.recordHolidays?.(holidays),
     },
   });
   summary.errors.push(...validationErrors);
@@ -79,6 +80,10 @@ async function runAutoBook({
         `✅ <b>${escapeHtml(targetDate)} 이미 예약되어 있습니다.</b>\n` +
           `🚌 ${escapeHtml(target.name)}\n🕐 실행 시간: ${escapeHtml(executedAt)}`,
       );
+    } else if (result.status === "HOLIDAY") {
+      // 공휴일은 실패가 아니므로 알리지 않고, 혹시 남은 실패 기록도 정리한다.
+      state.recordSuccess(scope);
+      console.log(`[autobook] ${targetDate}(${result.name})은 공휴일이라 건너뜁니다.`);
     } else if (["NOT_OPEN", "NOT_BOOKABLE", "NO_SEAT", "NO_ALLOC"].includes(result.status)) {
       const incident = state.recordFailure(scope, result.status);
       if (incident.notify) {

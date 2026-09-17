@@ -81,6 +81,7 @@ async function runMonitor({
       bookSeat: deps.bookSeat || bookSeat,
       attemptBooking: deps.attemptBooking || attemptBooking,
       onResult: (item) => results.push(item),
+      onHolidays: (holidays) => state.recordHolidays?.(holidays),
     },
   });
   summary.errors.push(...validationErrors);

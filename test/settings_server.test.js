@@ -153,6 +153,7 @@ test("상태 API는 최근 예약 결과, 실패, 마지막 확인 시각을 돌
       { target: "출근", date: "2026-09-18", seatNo: "17", bookedAt: 200 },
       { target: "출근", date: "2026-09-21", seatNo: "13", bookedAt: 300 },
     ],
+    holidays: [{ date: "2026-09-24", name: "추석 연휴" }],
   }));
   fs.writeFileSync(paths.monitorLogPath, "모니터링 완료\n");
 
@@ -160,10 +161,11 @@ test("상태 API는 최근 예약 결과, 실패, 마지막 확인 시각을 돌
   assert.deepEqual(status.completed.map((item) => item.date), ["2026-09-21", "2026-09-18"]);
   assert.deepEqual(status.failures, [{ scope: "monitor", count: 3, since: 1, lastAt: 2 }]);
   assert.ok(!Number.isNaN(Date.parse(status.checkedAt)));
+  assert.deepEqual(status.holidays, [{ date: "2026-09-24", name: "추석 연휴" }]);
 });
 
 test("상태 파일이 없으면 빈 상태를 돌려준다", async (t) => {
   const { base } = await startServer(t);
 
-  assert.deepEqual(await (await fetch(`${base}/api/status`)).json(), { checkedAt: null, failures: [], completed: [] });
+  assert.deepEqual(await (await fetch(`${base}/api/status`)).json(), { checkedAt: null, failures: [], completed: [], holidays: [] });
 });

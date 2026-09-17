@@ -133,6 +133,8 @@
     .date-btn[aria-pressed="true"] { border-color: var(--blue); background: var(--blue); color: var(--blue-ink); }
     .date-btn[aria-pressed="true"] .m, .date-btn[aria-pressed="true"] .d, .date-btn[aria-pressed="true"] .w { color: inherit; }
     .date-btn.is-booked[aria-pressed="true"] { border-color: var(--green); background: var(--green); color: var(--card); }
+    .date-btn.is-holiday { border-color: transparent; background: var(--red-soft); }
+    .date-btn.is-holiday .d, .date-btn.is-holiday .w { color: var(--red); }
     .extra-dates { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
     .date-chip { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 0 2px 0 12px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); font-size: 13px; font-weight: 700; }
     .date-chip button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: inherit; }
@@ -369,6 +371,8 @@
       .filter((c) => c.date >= today() && (state.targets.length === 1 || names.has(c.target)))
       .map((c) => c.date);
   }
+  // 매크로가 MiRi에서 받아 runtime/state.json에 모아 둔 공휴일 (날짜 → 이름).
+  const holidayMap = () => new Map((state.status?.holidays || []).map((h) => [h.date, h.name]));
   function latestCompleted() {
     const items = [...(state.status?.completed || [])];
     items.sort((a, b) => (b.bookedAt || 0) - (a.bookedAt || 0) || String(b.date).localeCompare(String(a.date)));
@@ -426,7 +430,7 @@
     for (const t of state.targets) {
       const who = multi ? `<span class="who">${esc(targetName(t))}</span>` : '';
       if (t.autoBookEnabled) {
-        const [run] = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 1, booked: bookedDatesFor(t) });
+        const [run] = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 1, booked: bookedDatesFor(t), holidays: [...holidayMap().keys()] });
         rows.push(planRow('자동예약', run
           ? `<b>${fmt(run.runDate)} 10:00</b>에 ${fmt(run.targetDate)} 좌석 예약${who}`
           : `요일을 고르면 일정이 보여요${who}`));
@@ -589,13 +593,17 @@
   function autoHtml(t, f) {
     const k = t._key;
     const on = new Set(t.weekdays);
-    const runs = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 3, booked: bookedDatesFor(t) });
+    const holidays = holidayMap();
+    const runs = U.nextAutoBookRuns(t.weekdays, Date.now(), { count: 3, booked: bookedDatesFor(t), holidays: [...holidays.keys()] });
+    // 고른 요일에 걸리는 다가오는 공휴일은 건너뛴다고 미리 알려준다.
+    const skipped = [...holidays].filter(([date]) => date > today() && t.weekdays.includes(U.weekdayOf(date))).slice(0, 3);
     const days = DAYS.map(([code, label]) => `<button type="button" class="day-btn${code === 'SAT' || code === 'SUN' ? ' is-weekend' : ''}" data-action="toggle-day" data-day="${code}" data-fid="${k}:day:${code}" aria-pressed="${on.has(code)}">${label}</button>`).join('');
     const quick = [['weekdays', '평일'], ['everyday', '매일'], ['none', '모두 해제']]
       .map(([set, label]) => `<button type="button" class="quick-btn" data-action="quick-days" data-set="${set}" data-fid="${k}:quick:${set}">${label}</button>`).join('');
     return `<div class="days" role="group" aria-label="자동예약 요일">${days}</div>
       <div class="quick">${quick}</div>
       ${runs.length ? `<p class="hint">다음 예약 대상 ${runs.map((r) => fmt(r.targetDate)).join(' · ')} (각각 7일 전 10:00)</p>` : ''}
+      ${skipped.length ? `<p class="hint">${skipped.map(([date, name]) => `${fmt(date)} ${esc(name)}`).join(' · ')}은 공휴일이라 건너뛰어요</p>` : ''}
       ${errorHtml(`${k}-days-err`, f.weekdays)}`;
   }
 
@@ -605,6 +613,7 @@
     const strip = U.dateStrip(now, 14);
     const inStrip = new Set(strip.map((s) => s.date));
     const booked = new Set(bookedDatesFor(t));
+    const holidays = holidayMap();
     const selected = new Set(t.monitorDates);
     const past = t.monitorDates.filter((d) => d < now);
     const future = t.monitorDates.filter((d) => d >= now);
@@ -612,7 +621,9 @@
     const buttons = strip.map((s, i) => {
       const on = selected.has(s.date);
       const isBooked = booked.has(s.date);
-      return `<button type="button" class="date-btn${s.weekend ? ' is-weekend' : ''}${isBooked ? ' is-booked' : ''}" data-action="toggle-date" data-date="${s.date}" data-fid="${k}:date:${s.date}" aria-pressed="${on}" aria-label="${fmt(s.date)}${isBooked ? ', 이미 예약됨' : ''}"${isBooked && !on ? ' disabled' : ''}><span class="m">${i === 0 || s.day === 1 ? `${s.month}월` : ''}</span><span class="d">${s.day}</span><span class="w">${isBooked ? '예약됨' : s.weekday}</span></button>`;
+      const holiday = holidays.get(s.date);
+      const label = isBooked ? '예약됨' : holiday ? '휴일' : s.weekday;
+      return `<button type="button" class="date-btn${s.weekend ? ' is-weekend' : ''}${holiday ? ' is-holiday' : ''}${isBooked ? ' is-booked' : ''}" data-action="toggle-date" data-date="${s.date}" data-fid="${k}:date:${s.date}" aria-pressed="${on}" aria-label="${fmt(s.date)}${holiday ? `, ${esc(holiday)}` : ''}${isBooked ? ', 이미 예약됨' : ''}"${(isBooked || holiday) && !on ? ' disabled' : ''}><span class="m">${i === 0 || s.day === 1 ? `${s.month}월` : ''}</span><span class="d">${s.day}</span><span class="w">${label}</span></button>`;
     }).join('');
     const extraChips = extra.map((d) => `<span class="date-chip">${fmt(d)}<button type="button" data-action="remove-date" data-date="${d}" aria-label="${fmt(d)} 빼기">×</button></span>`).join('');
     return `<div class="strip" role="group" aria-label="빈자리 확인 날짜">${buttons}</div>

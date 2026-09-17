@@ -143,7 +143,8 @@ function createSettingsServer({
     const completed = [...(runtimeState.completed || [])]
       .sort((a, b) => (b.bookedAt || 0) - (a.bookedAt || 0) || String(b.date).localeCompare(String(a.date)))
       .slice(0, 20);
-    return sendJson(req, res, 200, { checkedAt, failures, completed });
+    const holidays = runtimeState.holidays || [];
+    return sendJson(req, res, 200, { checkedAt, failures, completed, holidays });
   }
 
   return http.createServer(async (req, res) => {

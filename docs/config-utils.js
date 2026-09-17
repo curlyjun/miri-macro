@@ -85,14 +85,14 @@ var ConfigUtils = (function createConfigUtils() {
     return today && date.slice(0, 4) !== today.slice(0, 4) ? `${date.slice(0, 4)}년 ${label}` : label;
   }
 
-  // 오늘 10:00이 이미 지났으면 오늘 실행분은 끝났으므로 내일부터 센다. 이미 예약된 날짜는 건너뛴다.
-  function nextAutoBookRuns(weekdays, now = Date.now(), { count = 3, booked = [] } = {}) {
+  // 오늘 10:00이 이미 지났으면 오늘 실행분은 끝났으므로 내일부터 센다. 이미 예약된 날짜와 공휴일은 건너뛴다.
+  function nextAutoBookRuns(weekdays, now = Date.now(), { count = 3, booked = [], holidays = [] } = {}) {
     if (!weekdays?.length) return [];
     const kst = new Date(now + KST_OFFSET_MS);
     const today = kst.toISOString().slice(0, 10);
     const first = kst.getUTCHours() >= AUTOBOOK_HOUR_KST ? addDays(today, 1) : today;
     const selected = new Set(weekdays);
-    const skip = new Set(booked);
+    const skip = new Set([...booked, ...holidays]);
     const runs = [];
     for (let i = 0; runs.length < count && i < 14 * count; i += 1) {
       const runDate = addDays(first, i);

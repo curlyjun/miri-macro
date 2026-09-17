@@ -44,6 +44,16 @@ test("예약 완료 날짜를 예약 시각과 함께 중복 없이 기록한다
   ]);
 });
 
+test("공휴일은 날짜별로 합쳐 두고 지난 날짜는 버린다", () => {
+  const state = new RuntimeState({ now: () => Date.parse("2026-09-17T01:00:00Z") });
+
+  state.recordHolidays([{ date: "2026-09-10", name: "지난 날" }, { date: "2026-09-24", name: "추석 연휴" }]);
+  assert.deepEqual(state.recordHolidays([{ date: "2026-10-03", name: "개천절" }]), [
+    { date: "2026-09-24", name: "추석 연휴" },
+    { date: "2026-10-03", name: "개천절" },
+  ]);
+});
+
 test("살아 있는 잠금이 있으면 중복 실행을 건너뛴다", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "miri-lock-"));
   fs.mkdirSync(dir, { recursive: true });

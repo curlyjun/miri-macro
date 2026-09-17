@@ -106,6 +106,41 @@ test("예약 날짜가 아직 열리지 않았으면 설정된 횟수만큼 다�
   assert.equal(summary.notOpen, 1);
 });
 
+test("대상 날짜가 공휴일이면 재시도하지 않고 HOLIDAY로 끝내며 공휴일을 넘겨준다", async () => {
+  let calls = 0;
+  let sleeps = 0;
+  const results = [];
+  let reported = null;
+  const summary = await runAutoBookTargets({
+    targets: [{ name: "출근", autoBookEnabled: true, weekdays: ["THU"] }],
+    targetDate: "2026-09-24",
+    targetWeekday: "THU",
+    deps: {
+      getBookableDates: async () => {
+        calls += 1;
+        return {
+          resultCode: 0,
+          data: [{
+            bookableDates: [{ date: "2026-09-23", bookableYn: false }],
+            calendarHolidays: [{ date: "2026-09-24", displayText: "추석 연휴" }, { date: "2026-10-03", displayText: "개천절" }],
+          }],
+        };
+      },
+      attemptBooking: async () => ({ status: "BOOKED" }),
+      sleep: async () => { sleeps += 1; },
+      onResult: (item) => results.push(item.result),
+      onHolidays: (holidays) => { reported = holidays; },
+    },
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(sleeps, 0);
+  assert.deepEqual(results, [{ status: "HOLIDAY", date: "2026-09-24", name: "추석 연휴" }]);
+  assert.equal(summary.holidays, 1);
+  assert.equal(summary.notOpen, 0);
+  assert.deepEqual(reported, [{ date: "2026-09-24", name: "추석 연휴" }, { date: "2026-10-03", name: "개천절" }]);
+});
+
 test("이미 예약된 날짜는 예약 가능 플래그와 무관하게 완료 처리한다", async () => {
   let attempts = 0;
   const summary = await runAutoBookTargets({

@@ -82,6 +82,16 @@ test("오늘 10:00이 지났으면 내일 실행분부터, 이미 예약된 날�
   assert.deepEqual(nextAutoBookRuns([], before), []);
 });
 
+test("다음 자동예약 계산에서 공휴일 날짜를 건너뛴다", () => {
+  const after = Date.parse("2026-09-17T01:30:00Z"); // 목 10:30 KST
+  assert.deepEqual(
+    nextAutoBookRuns(["MON", "THU", "FRI"], after, { count: 1, holidays: ["2026-09-24", "2026-09-25"] }),
+    [{ runDate: "2026-09-21", targetDate: "2026-09-28" }],
+  );
+  assert.match(page, /holidays: \[\.\.\.holidayMap\(\)\.keys\(\)\]/);
+  assert.match(page, /is-holiday/);
+});
+
 test("빈자리 날짜 띠는 오늘부터 14일을 요일·주말 표시와 함께 만든다", () => {
   const strip = dateStrip("2026-09-11");
   assert.equal(strip.length, 14);
