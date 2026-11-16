@@ -71,3 +71,9 @@ test("모니터와 자동예약은 실행 끝에 미전송 큐를 비운다", ()
     assert.match(source, /deps\.flushTelegramOutbox \|\| flushTelegramOutbox/, entry);
   }
 });
+
+test("미전송 알림이 남아 있으면 새 알림을 먼저 보내지 않고 큐 뒤에 붙여 순서를 지킨다", () => {
+  const source = fs.readFileSync(path.join(__dirname, "..", "lib", "common.js"), "utf8");
+  const send = source.slice(source.indexOf("async function sendTelegram("), source.indexOf("async function flushTelegramOutbox"));
+  assert.ok(send.indexOf("outboxSize() > 0") < send.indexOf("await sendTelegramRaw(message)"));
+});

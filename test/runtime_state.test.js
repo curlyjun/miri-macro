@@ -71,3 +71,36 @@ test("살아 있는 잠금이 있으면 중복 실행을 건너뛴다", async ()
   assert.equal(result.skipped, true);
   assert.equal(ran, false);
 });
+
+test("일시적 실패는 minCount만큼 연속돼야 알리고, 알리지 않은 실패는 복구도 알리지 않는다", () => {
+  const state = new RuntimeState();
+
+  assert.equal(state.recordFailure("monitor", "fetch failed", { minCount: 2 }).notify, false);
+  assert.deepEqual(state.recordSuccess("monitor"), { notify: false, type: "HEALTHY", count: 1 });
+
+  state.recordFailure("monitor", "fetch failed", { minCount: 2 });
+  const second = state.recordFailure("monitor", "fetch failed", { minCount: 2 });
+  assert.equal(second.notify, true);
+  assert.equal(second.type, "NEW_FAILURE");
+  assert.equal(state.recordSuccess("monitor").type, "RECOVERED");
+});
+
+test("notified가 없는 예전 실패 기록은 이미 알린 것으로 보고 복구를 알린다", () => {
+  const state = new RuntimeState();
+  state.state.failures.monitor = { fingerprint: "x", firstAt: 1, lastAt: 1, lastNotifiedAt: 1, count: 3 };
+
+  assert.equal(state.recordSuccess("monitor").notify, true);
+});
+
+test("모니터 실행 시각과 자동예약 실행일을 남긴다", () => {
+  let now = 1000;
+  const state = new RuntimeState({ now: () => now });
+
+  assert.equal(state.markMonitorRun(), null);
+  now = 2000;
+  assert.equal(state.markMonitorRun(), 1000);
+
+  for (let day = 1; day <= 16; day += 1) state.recordAutobookRun(`2026-11-${String(day).padStart(2, "0")}`);
+  assert.equal(state.state.autobookRuns.length, 14);
+  assert.equal(state.state.autobookRuns[0], "2026-11-03");
+});

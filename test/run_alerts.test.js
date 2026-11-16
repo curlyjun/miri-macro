@@ -47,3 +47,25 @@ test("억제된 치명 오류는 텔레그램을 보내지 않는다", async () 
   });
   assert.equal(sent, false);
 });
+
+const { isTransientError } = require("../lib/run-alerts");
+
+test("네트워크 끊김·시간 초과·서버 오류만 일시적 실패로 본다", () => {
+  assert.equal(isTransientError(Object.assign(new Error("fetch failed"), { code: "NETWORK_ERROR" })), true);
+  assert.equal(isTransientError(new Error("fetch failed")), true);
+  assert.equal(isTransientError(Object.assign(new Error("HTTP 503"), { code: "HTTP_ERROR", status: 503 })), true);
+  assert.equal(isTransientError(Object.assign(new Error("HTTP 401"), { code: "UNAUTHORIZED", status: 401 })), false);
+  assert.equal(isTransientError(new Error("예약 가능 날짜 조회 실패")), false);
+});
+
+test("치명 오류도 minCount를 넘겨 첫 일시적 실패는 알리지 않을 수 있다", async () => {
+  const calls = [];
+  await reportFatal({
+    scope: "monitor",
+    error: new Error("fetch failed"),
+    state: { recordFailure: (scope, fingerprint, options) => { calls.push(options); return { notify: false }; } },
+    sendTelegram: async () => assert.fail("보내면 안 됨"),
+    minCount: 2,
+  });
+  assert.deepEqual(calls, [{ minCount: 2 }]);
+});

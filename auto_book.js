@@ -28,6 +28,8 @@ async function runAutoBook({
 } = {}) {
   const { date: targetDate, weekday: targetWeekday } = getTargetDate();
   const executedAt = nowKST();
+  // 모니터가 잠든 사이 놓친 자동예약을 찾을 수 있게 실행한 날(KST)을 남긴다.
+  state.recordAutobookRun?.(new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10));
   const results = [];
   const normalized = normalizeConfig(config);
   const validationErrors = [];
