@@ -25,12 +25,16 @@ test("장애 뒤 정상 실행은 복구를 한 번만 알린다", () => {
   assert.equal(state.recordSuccess("monitor").notify, false);
 });
 
-test("일일 상태는 같은 날짜에 한 번만 보낸다", () => {
-  const state = new RuntimeState();
+test("주간 현황을 보낸 날을 남기고 예전 일일 상태 기록은 지운다", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "miri-state-"));
+  const statePath = path.join(dir, "state.json");
+  fs.writeFileSync(statePath, JSON.stringify({ failures: {}, dailyHealthDate: "2026-11-18" }));
+  const state = new RuntimeState({ statePath });
 
-  assert.equal(state.recordDailyHealth("2026-07-13").notify, true);
-  assert.equal(state.recordDailyHealth("2026-07-13").notify, false);
-  assert.equal(state.recordDailyHealth("2026-07-14").notify, true);
+  state.markWeeklyDigest("2026-11-22");
+  const saved = JSON.parse(fs.readFileSync(statePath, "utf8"));
+  assert.equal(saved.weeklyDigestDate, "2026-11-22");
+  assert.equal("dailyHealthDate" in saved, false);
 });
 
 test("예약 완료 날짜를 예약 시각과 함께 중복 없이 기록한다", () => {

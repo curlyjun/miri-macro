@@ -57,7 +57,7 @@ TELEGRAM_BOT_TOKEN=BotFather에서_받은_토큰
 TELEGRAM_CHAT_ID=내_채팅_ID
 API_TIMEOUT_MS=15000
 ERROR_NOTIFY_COOLDOWN_HOURS=6
-HEALTH_REPORT_HOUR=9
+WEEKLY_DIGEST_HOUR=20
 TELEGRAM_RETRIES=3
 ```
 
@@ -161,11 +161,12 @@ M=/Users/seongjunpark/Documents/projects/miri-macro
 
 ## 알림 정책
 
-- 새로운 실행 장애는 즉시 알립니다.
+- 새로운 실행 장애는 즉시 알립니다. 다만 네트워크 끊김·시간 초과 같은 일시적 실패는 모니터가 두 번 연속(10분) 실패할 때만 알립니다.
 - 같은 장애는 기본 6시간 동안 반복 알림을 보내지 않습니다.
 - 장애가 6시간 이상 계속되면 누적 횟수와 함께 다시 알립니다.
 - 정상화되면 복구 알림을 한 번 보냅니다.
-- 매일 오전 9시 이후 첫 정상 모니터 실행에서 적용 설정의 마지막 저장 시각과 확인 대상을 요약합니다.
+- 정상일 때는 따로 알리지 않습니다. 대신 일요일 20시(`WEEKLY_DIGEST_HOUR`) 이후 첫 모니터 실행에서 다음 주 월~금 예약 현황(예약 좌석, 휴일, 빈자리 감지 중, 예약 안 된 날)을 한 번 보냅니다.
+- 맥이 30분 넘게 잠들었다 깨면 잠든 시간과 그 사이 놓친 자동예약을 알립니다.
 - 런타임 상태와 잠금, 설정 페이지 저장본은 `runtime/`에 저장되며 Git에는 커밋되지 않습니다.
 
 ## 전송 실패 대비

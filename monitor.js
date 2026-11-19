@@ -1,9 +1,7 @@
 "use strict";
 
-const fs = require("fs");
 const path = require("path");
 const {
-  RUNTIME_CONFIG_PATH,
   loadConfig,
   normalizeConfig,
   validateTarget,
@@ -13,6 +11,7 @@ const { runMonitorTargets } = require("./lib/monitoring");
 const { RuntimeState, withProcessLock } = require("./lib/runtime-state");
 const { escapeHtml } = require("./lib/telegram");
 const { isTransientError, reportFatal } = require("./lib/run-alerts");
+const { buildWeeklyDigest } = require("./lib/weekly-digest");
 const {
   WEEKDAY_MAP,
   nowKST,
@@ -89,18 +88,6 @@ function kstParts(now = Date.now()) {
   };
 }
 
-// 설정 페이지는 runtime/config.json에 저장하므로 그 파일의 수정 시각이 곧 마지막 저장 시각이다.
-function describeAppliedConfig({ runtimePath = RUNTIME_CONFIG_PATH } = {}) {
-  let savedAt;
-  try {
-    savedAt = fs.statSync(runtimePath).mtimeMs;
-  } catch {
-    return "저장소 config.json";
-  }
-  const kst = new Date(savedAt + 9 * 3600 * 1000).toISOString();
-  return `로컬 설정 (${kst.slice(0, 10)} ${kst.slice(11, 16)} 저장)`;
-}
-
 async function runMonitor({
   dryRun = false,
   config = loadConfig(),
@@ -139,7 +126,7 @@ async function runMonitor({
     return true;
   });
   const results = [];
-  const { date: today, hour } = kstParts();
+  const { date: today, hour } = kstParts(state.now());
 
   const summary = await runMonitorTargets({
     targets,
@@ -211,18 +198,23 @@ async function runMonitor({
     if (recovery.notify) {
       await sender(`✅ <b>${modeLabel} 복구됨</b>\n누적 실패 ${recovery.count}회 후 정상화\n🕐 ${escapeHtml(executedAt)}`);
     }
-    const healthHour = Number(process.env.HEALTH_REPORT_HOUR) || 9;
-    if (!dryRun && hour >= healthHour) {
-      const health = state.recordDailyHealth(today);
-      if (health.notify) {
-        await sender(
-          `💚 <b>MiRi 매크로 일일 상태</b>\n` +
-            `확인 대상: ${summary.targetsChecked}개\n` +
-            `확인 날짜: ${summary.datesChecked}개\n` +
-            `적용 설정: ${escapeHtml(describeAppliedConfig())}\n` +
-            `🕐 ${escapeHtml(executedAt)}`,
-        );
-      }
+  }
+
+  // 일요일 저녁에 다음 주 예약 현황을 한 번 보낸다. 실패하면 표시하지 않아 다음 실행에서 다시 시도한다.
+  const digestHour = Number(process.env.WEEKLY_DIGEST_HOUR) || 20;
+  const isSunday = new Date(`${today}T00:00:00Z`).getUTCDay() === 0;
+  if (!dryRun && isSunday && hour >= digestHour && state.state.weeklyDigestDate !== today) {
+    try {
+      const message = await buildWeeklyDigest({
+        targets: normalized.targets.filter((target) => validateTarget(target).valid),
+        today,
+        holidays: state.state.holidays || [],
+        getBookableDates: deps.getBookableDates || getBookableDates,
+      });
+      if (message) await sender(message);
+      state.markWeeklyDigest(today);
+    } catch (error) {
+      console.error("[주간 현황] 만들기 실패:", error.message);
     }
   }
 
@@ -259,4 +251,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { describeAppliedConfig, describeSleepGap, findMissedAutobooks, kstParts, main, runMonitor };
+module.exports = { describeSleepGap, findMissedAutobooks, kstParts, main, runMonitor };
